@@ -52,7 +52,7 @@ if (!port3001Free || !port3000Free) {
 // 2. Start Backend
 console.log('[1/2] 백엔드 서버(포트 3001) 시작 중...');
 const backend = spawn(process.execPath, ['--watch', 'server/minimal.mjs'], {
-  env: { ...process.env, PORT: '3001' },
+  env: { ...process.env, PORT: '3001', HOST: '127.0.0.1' },
   stdio: 'inherit',
 });
 

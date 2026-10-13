@@ -298,5 +298,5 @@ setInterval(() => {
 }, Math.max(50, Math.min(GRACE_MS / 2, 500))).unref();
 
 const port = Number(process.env.PORT || 3001);
-const host = process.env.HOST || '0.0.0.0';
+const host = process.env.HOST || '127.0.0.1';
 http.listen(port, host, () => console.log(`BeatSync minimal running on http://${host}:${port}`));
