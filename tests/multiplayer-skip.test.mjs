@@ -251,5 +251,77 @@ const step = () => { if (!pending.length) return false; pending.sort((a, b) => a
   assert.equal(game.phase, 'reveal');
 }
 
+// 7. Force Skip in 3-player game during playing phase
+{
+  const room = {
+    players: [
+      { id: 'p1', name: '호스트', connected: true },
+      { id: 'p2', name: '플레이어2', connected: true },
+      { id: 'p3', name: '플레이어3', connected: true },
+    ],
+    emitted: [],
+    emit(event, payload) { this.emitted.push([event, payload]); },
+  };
+
+  const game = new Game(room, {
+    config: { mode: 'speed', rounds: 5 },
+    revealMs: 60000,
+    now, timers, clear,
+    provider: {
+      listTracks: () => tracks.map(t => ({ ...t })),
+      getPreview: (t, s) => ({ url: `mock://${t.id}`, start: s }),
+    },
+  });
+
+  game.start();
+  step();
+  assert.equal(game.phase, 'playing');
+
+  // P1 uses force skip (force = true)
+  const res = game.skip('p1', true);
+  assert.equal(res.ok, true);
+  assert.equal(res.skipped, true);
+  assert.equal(res.forced, true, '호스트 강제 넘기기는 다른 플레이어 투표 없이 즉시 넘어가야 함');
+  assert.equal(game.phase, 'reveal');
+}
+
+// 8. Force Skip in 3-player game during reveal phase
+{
+  const room = {
+    players: [
+      { id: 'p1', name: '호스트', connected: true },
+      { id: 'p2', name: '플레이어2', connected: true },
+      { id: 'p3', name: '플레이어3', connected: true },
+    ],
+    emitted: [],
+    emit(event, payload) { this.emitted.push([event, payload]); },
+  };
+
+  const game = new Game(room, {
+    config: { mode: 'speed', rounds: 5 },
+    revealMs: 60000,
+    now, timers, clear,
+    provider: {
+      listTracks: () => tracks.map(t => ({ ...t })),
+      getPreview: (t, s) => ({ url: `mock://${t.id}`, start: s }),
+    },
+  });
+
+  game.start();
+  step();
+  // Transition to reveal
+  game.skip('p1', true);
+  assert.equal(game.phase, 'reveal');
+  const round1Id = game.roundId;
+
+  // In reveal, P1 uses force skip to go to next round
+  const resReveal = game.skipReveal('p1', true);
+  assert.equal(resReveal.ok, true);
+  assert.equal(resReveal.skipped, true);
+  assert.equal(resReveal.forced, true);
+  assert.equal(game.phase, 'playing');
+  assert.equal(game.roundId, round1Id + 1, '리빌 상태에서 강제 넘기기 시 바로 다음 라운드로 진행되어야 함');
+}
+
 console.log('multiplayer-skip: all assertions passed!');
 

@@ -19,7 +19,7 @@ function useCountdown(endsAt?: number) {
 }
 
 export default function SpeedMode() {
-  const { state, reveal, over, me, answer, skip, volume, toasts } = useGame();
+  const { state, reveal, over, me, answer, skip, forceSkip, volume, toasts } = useGame();
   const audio = useRef<HTMLAudioElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [guess, setGuess] = useState('');
@@ -163,6 +163,16 @@ export default function SpeedMode() {
     }
   };
 
+  const handleForceSkip = async () => {
+    if (skipping) return;
+    setSkipping(true);
+    try {
+      await forceSkip();
+    } finally {
+      setSkipping(false);
+    }
+  };
+
   const handleSkipRef = useRef(handleSkip);
   handleSkipRef.current = handleSkip;
 
@@ -196,6 +206,7 @@ export default function SpeedMode() {
   const skipVotes = state?.skipVotes || [];
   const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
   const hasVoted = !!me && skipVotes.includes(me);
+  const isHost = !!me && state?.hostId === me;
 
   // Game Over Podium
   if (over) {
@@ -302,6 +313,19 @@ export default function SpeedMode() {
           >
             <span>⏭️ {activeReveal ? '다음 곡' : '넘기기'}</span>
           </button>
+
+          {/* Host Force Skip Button in Header */}
+          {isHost && activeCount > 1 && (
+            <button
+              type="button"
+              onClick={handleForceSkip}
+              disabled={skipping}
+              title="호스트 권한으로 투표 없이 즉시 넘기기"
+              className="px-2.5 py-1.5 sm:px-3 text-xs font-bold flex items-center gap-1 rounded-xl border border-amber-400/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 active:scale-95 transition-all shadow-sm"
+            >
+              <span>⚡ 강제 넘기기</span>
+            </button>
+          )}
 
           <div className="hidden sm:block rounded-xl border border-slate-700/60 bg-slate-800/50 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
             라운드 <span className="font-mono text-white text-sm">{(state?.roundId ?? 0)}</span> / {state?.settings.rounds}
@@ -497,35 +521,49 @@ export default function SpeedMode() {
 
           {/* 1-Minute Auto-Advance Countdown & Skip Button */}
           <div className="pt-3 border-t border-slate-700/40 flex flex-col items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={handleSkip}
-              disabled={skipping}
-              className={`px-7 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl transition-all ${
-                hasVoted
-                  ? 'border-2 border-emerald-400 bg-emerald-500/25 text-emerald-200'
-                  : 'liquid-btn-primary hover:scale-[1.02] active:scale-95'
-              }`}
-            >
-              <span>
-                {hasVoted
-                  ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount})`
-                  : activeCount > 1
-                  ? `⏭️ 다음 노래로 넘기기 (${currentVotesCount}/${activeCount})`
-                  : '⏭️ 다음 노래로 넘기기'}
-              </span>
-              <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
-                Ctrl + Enter
-              </kbd>
-              {revealSeconds > 0 && (
-                <span className="font-mono text-xs opacity-80 font-normal">
-                  ({revealSeconds}초 후 자동 진행)
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleSkip}
+                disabled={skipping}
+                className={`px-7 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl transition-all ${
+                  hasVoted
+                    ? 'border-2 border-emerald-400 bg-emerald-500/25 text-emerald-200'
+                    : 'liquid-btn-primary hover:scale-[1.02] active:scale-95'
+                }`}
+              >
+                <span>
+                  {hasVoted
+                    ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount})`
+                    : activeCount > 1
+                    ? `⏭️ 다음 노래로 넘기기 (${currentVotesCount}/${activeCount})`
+                    : '⏭️ 다음 노래로 넘기기'}
                 </span>
+                <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
+                  Ctrl + Enter
+                </kbd>
+                {revealSeconds > 0 && (
+                  <span className="font-mono text-xs opacity-80 font-normal">
+                    ({revealSeconds}초 후 자동 진행)
+                  </span>
+                )}
+              </button>
+
+              {isHost && activeCount > 1 && (
+                <button
+                  type="button"
+                  onClick={handleForceSkip}
+                  disabled={skipping}
+                  title="호스트 권한으로 투표 없이 즉시 넘기기"
+                  className="px-5 py-3 text-sm font-black flex items-center gap-2 rounded-2xl border-2 border-amber-400/70 bg-amber-500/20 text-amber-200 hover:bg-amber-500/35 active:scale-95 transition-all shadow-xl"
+                >
+                  <span>⚡ 강제 넘기기</span>
+                </button>
               )}
-            </button>
+            </div>
             <p className="text-[11px] text-slate-400 text-center">
               {activeCount > 1
-                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 즉시 다음 곡이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)`
+                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 즉시 다음 곡이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)${isHost ? ' (호스트는 ⚡강제 넘기기 가능)' : ''}`
                 : '미리듣기 종료 후 1분간 정답 곡을 확인하실 수 있으며, 넘기기 버튼이나 Ctrl+Enter를 누르면 즉시 다음 곡이 시작됩니다.'}
             </p>
           </div>
@@ -630,30 +668,45 @@ export default function SpeedMode() {
 
           {/* Always-Active Skip Button in Form Area */}
           <div className="pt-1 flex flex-col items-center justify-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleSkip}
-              disabled={skipping}
-              className={`w-full py-2.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
-                hasVoted
-                  ? 'border border-emerald-400/80 bg-emerald-500/20 text-emerald-300'
-                  : 'liquid-btn-secondary hover:bg-slate-700/60'
-              }`}
-            >
-              <span>
-                {hasVoted
-                  ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount}명 동의 - 다른 플레이어 대기 중)`
-                  : activeCount > 1
-                  ? `⏭️ 이번 문제 넘기기 투표 (${currentVotesCount}/${activeCount})`
-                  : '⏭️ 이번 문제 넘기기 (정답 확인)'}
-              </span>
-              <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono text-slate-300 border border-slate-600">
-                Ctrl + Enter
-              </kbd>
-            </button>
+            <div className="w-full flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSkip}
+                disabled={skipping}
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
+                  hasVoted
+                    ? 'border border-emerald-400/80 bg-emerald-500/20 text-emerald-300'
+                    : 'liquid-btn-secondary hover:bg-slate-700/60'
+                }`}
+              >
+                <span>
+                  {hasVoted
+                    ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount}명 동의 - 대기 중)`
+                    : activeCount > 1
+                    ? `⏭️ 이번 문제 넘기기 투표 (${currentVotesCount}/${activeCount})`
+                    : '⏭️ 이번 문제 넘기기 (정답 확인)'}
+                </span>
+                <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono text-slate-300 border border-slate-600">
+                  Ctrl + Enter
+                </kbd>
+              </button>
+
+              {isHost && activeCount > 1 && (
+                <button
+                  type="button"
+                  onClick={handleForceSkip}
+                  disabled={skipping}
+                  title="호스트 권한으로 투표 없이 즉시 넘기기"
+                  className="py-2.5 px-3.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 rounded-xl border border-amber-400/60 bg-amber-500/20 text-amber-200 hover:bg-amber-500/35 active:scale-95 transition-all shadow-sm shrink-0"
+                >
+                  <span>⚡ 강제 넘기기</span>
+                </button>
+              )}
+            </div>
             {activeCount > 1 && (
               <p className="text-[11px] text-slate-400 text-center">
-                멀티플레이 중에는 모든 접속자({activeCount}명)가 넘기기 버튼을 눌러야 이번 문제가 넘어갑니다.
+                접속 중인 모든 플레이어({activeCount}명)가 넘기기를 눌러야 이번 문제가 넘어갑니다.
+                {isHost && ' (호스트는 ⚡강제 넘기기 가능)'}
               </p>
             )}
           </div>

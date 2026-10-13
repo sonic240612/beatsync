@@ -5,7 +5,7 @@ import { tracks as staticTracks } from '@/shared/tracks.js';
 import { VolumeControl } from '@/components/volume-control';
 
 export default function TimelineMode() {
-  const { state, reveal, over, me, insert, skip, volume } = useGame();
+  const { state, reveal, over, me, insert, skip, forceSkip, volume } = useGame();
   const audio = useRef<HTMLAudioElement>(null);
   const timelineContainerRef = useRef<HTMLDivElement>(null);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
@@ -158,6 +158,16 @@ export default function TimelineMode() {
     setSkipping(true);
     try {
       await skip();
+    } finally {
+      setSkipping(false);
+    }
+  };
+
+  const handleForceSkip = async () => {
+    if (skipping) return;
+    setSkipping(true);
+    try {
+      await forceSkip();
     } finally {
       setSkipping(false);
     }
@@ -366,6 +376,7 @@ export default function TimelineMode() {
   const skipVotes = state?.skipVotes || [];
   const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
   const hasVoted = !!me && skipVotes.includes(me);
+  const isHost = !!me && state?.hostId === me;
 
   return (
     <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
@@ -396,6 +407,19 @@ export default function TimelineMode() {
 
         <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
           <VolumeControl />
+
+          {/* Host Force Skip Button in Header */}
+          {isHost && activeCount > 1 && (
+            <button
+              type="button"
+              onClick={handleForceSkip}
+              disabled={skipping}
+              title="호스트 권한으로 투표 없이 즉시 넘기기"
+              className="px-2.5 py-1.5 sm:px-3 text-xs font-bold flex items-center gap-1 rounded-xl border border-amber-400/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 active:scale-95 transition-all shadow-sm"
+            >
+              <span>⚡ 강제 넘기기</span>
+            </button>
+          )}
 
           <div className="hidden sm:block rounded-xl border border-slate-700/60 bg-slate-800/50 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
             라운드 <span className="font-mono text-white text-sm">{(state?.roundId ?? 0)}</span>
@@ -586,30 +610,44 @@ export default function TimelineMode() {
 
           {/* Manual Next Turn Skip Button (NO Auto Timer in Timeline Mode!) */}
           <div className="pt-3 border-t border-slate-700/40 flex flex-col items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={handleSkip}
-              disabled={skipping}
-              className={`px-8 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl transition-all ${
-                hasVoted
-                  ? 'border-2 border-emerald-400 bg-emerald-500/25 text-emerald-200'
-                  : 'liquid-btn-primary hover:scale-[1.02] active:scale-95'
-              }`}
-            >
-              <span>
-                {hasVoted
-                  ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount})`
-                  : activeCount > 1
-                  ? `⏭️ 다음 턴으로 넘기기 (${currentVotesCount}/${activeCount})`
-                  : '⏭️ 다음 턴으로 넘기기'}
-              </span>
-              <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
-                Ctrl + Enter
-              </kbd>
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleSkip}
+                disabled={skipping}
+                className={`px-8 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl transition-all ${
+                  hasVoted
+                    ? 'border-2 border-emerald-400 bg-emerald-500/25 text-emerald-200'
+                    : 'liquid-btn-primary hover:scale-[1.02] active:scale-95'
+                }`}
+              >
+                <span>
+                  {hasVoted
+                    ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount})`
+                    : activeCount > 1
+                    ? `⏭️ 다음 턴으로 넘기기 (${currentVotesCount}/${activeCount})`
+                    : '⏭️ 다음 턴으로 넘기기'}
+                </span>
+                <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
+                  Ctrl + Enter
+                </kbd>
+              </button>
+
+              {isHost && activeCount > 1 && (
+                <button
+                  type="button"
+                  onClick={handleForceSkip}
+                  disabled={skipping}
+                  title="호스트 권한으로 투표 없이 즉시 넘기기"
+                  className="px-5 py-3 text-sm font-black flex items-center gap-2 rounded-2xl border-2 border-amber-400/70 bg-amber-500/20 text-amber-200 hover:bg-amber-500/35 active:scale-95 transition-all shadow-xl"
+                >
+                  <span>⚡ 강제 넘기기</span>
+                </button>
+              )}
+            </div>
             <p className="text-[11px] text-slate-400 text-center">
               {activeCount > 1
-                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 다음 턴이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)`
+                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 다음 턴이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)${isHost ? ' (호스트는 ⚡강제 넘기기 가능)' : ''}`
                 : '타임라인 모드는 넘기기 버튼이나 Ctrl+Enter를 누를 때까지 대기합니다. 충분히 확인 후 다음 턴을 진행하세요.'}
             </p>
           </div>

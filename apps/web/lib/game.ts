@@ -138,7 +138,8 @@ type Store = {
   start: () => Promise<boolean>;
   answer: (roundId: number, guessOrTitle: string, legacyArtist?: string) => Promise<boolean>;
   insert: (roundId: number, index: number) => Promise<boolean>;
-  skip: () => Promise<boolean>;
+  skip: (force?: boolean) => Promise<boolean>;
+  forceSkip: () => Promise<boolean>;
   reset: () => Promise<boolean>;
   clearError: () => void;
   request: (event: string, payload: Record<string, unknown>) => Promise<{ ok: boolean; error?: string; [key: string]: unknown } | null>;
@@ -275,6 +276,14 @@ export const useGame = create<Store>((set, get) => ({
             },
           };
         });
+      });
+
+      socket.on('round:force_skip', (data: { hostId: string; hostName: string }) => {
+        const me = get().me;
+        const msg = data.hostId === me
+          ? '⚡ 호스트 권한으로 곡을 강제 넘겼습니다.'
+          : `⚡ 호스트(${data.hostName})가 곡을 강제 넘겼습니다.`;
+        get().addToast(msg, 'warning');
       });
 
       socket.on('room:state', (state: RoomState) => {
@@ -433,8 +442,13 @@ export const useGame = create<Store>((set, get) => ({
     return !!result?.ok;
   },
 
-  skip: async () => {
-    const result = await get().request('game:next', {});
+  skip: async (force?: boolean) => {
+    const result = await get().request('game:next', { force: !!force });
+    return !!result?.ok;
+  },
+
+  forceSkip: async () => {
+    const result = await get().request('game:next', { force: true });
     return !!result?.ok;
   },
 

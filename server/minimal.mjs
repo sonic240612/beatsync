@@ -281,10 +281,18 @@ io.on('connection', (socket) => {
     emitState(room);
     return toAck(result);
   }));
-  socket.on('game:next', guard(() => {
+  socket.on('game:next', guard((data) => {
     const room = requirePlayer();
     if (!room.game) throw Error('진행 중인 게임이 없습니다.');
-    const result = room.game.skip(socket.data.playerId);
+    const isHost = room.hostId === socket.data.playerId;
+    if (data?.force && !isHost) throw Error('호스트만 강제 넘기기를 사용할 수 있습니다.');
+    const force = Boolean(data?.force && isHost);
+    if (force) {
+      const hostPlayer = room.players.find(p => p.id === socket.data.playerId);
+      const hostName = hostPlayer?.name || '호스트';
+      io.to(room.code).emit('round:force_skip', { hostId: socket.data.playerId, hostName });
+    }
+    const result = room.game.skip(socket.data.playerId, force);
     emitState(room);
     return toAck(result);
   }));

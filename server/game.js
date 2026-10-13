@@ -315,9 +315,9 @@ export class Game {
     // Timeline mode: NO auto advance timer. Waits for manual skip/next button!
     return { ok: false, error: '카드가 폐기되었습니다.', discarded: true };
   }
-  skip(playerId) {
+  skip(playerId, force = false) {
     if (this.phase === 'reveal') {
-      return this.skipReveal(playerId);
+      return this.skipReveal(playerId, force);
     }
     if (this.phase === 'playing') {
       const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
@@ -330,7 +330,7 @@ export class Game {
         }
       }
 
-      if (playerId && activePlayers.some(p => p.id === playerId)) {
+      if (!force && playerId && activePlayers.some(p => p.id === playerId)) {
         this.skipVotes.add(playerId);
         if (this.skipVotes.size < totalActive) {
           const voter = activePlayers.find(p => p.id === playerId);
@@ -358,18 +358,18 @@ export class Game {
         const winnerId = (this.roundSolvers.title?.playerId === this.roundSolvers.artist?.playerId)
           ? (this.roundSolvers.title?.playerId || null)
           : (this.roundSolvers.title?.playerId || this.roundSolvers.artist?.playerId || null);
-        const revealData = this.revealCurrent(winnerId, { skipped: true });
+        const revealData = this.revealCurrent(winnerId, { skipped: true, forced: force });
         this.room.emit('round:reveal', revealData);
         this.startTimer = this.timers(() => this.nextRound(), this.revealMs);
-        return { ok: true, skipped: true };
+        return { ok: true, skipped: true, forced: force };
       } else {
         return this.failInsert(this.currentTurn);
       }
     }
     return { ok: false, error: '현재 넘길 수 있는 상태가 아닙니다.' };
   }
-  skipReveal(playerId) {
-    if (this.phase !== 'reveal') return this.skip(playerId);
+  skipReveal(playerId, force = false) {
+    if (this.phase !== 'reveal') return this.skip(playerId, force);
 
     const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
     const totalActive = Math.max(1, activePlayers.length);
@@ -381,7 +381,7 @@ export class Game {
       }
     }
 
-    if (playerId && activePlayers.some(p => p.id === playerId)) {
+    if (!force && playerId && activePlayers.some(p => p.id === playerId)) {
       this.skipVotes.add(playerId);
       if (this.skipVotes.size < totalActive) {
         const voter = activePlayers.find(p => p.id === playerId);
@@ -412,7 +412,7 @@ export class Game {
       this.advanceTurn();
       this.beginTurn();
     }
-    return { ok: true, skipped: true };
+    return { ok: true, skipped: true, forced: force };
   }
   handlePlayerLeave(playerId) {
     this.skipVotes.delete(playerId);
