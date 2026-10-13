@@ -539,7 +539,7 @@ export default function SpeedMode() {
                     ? `⏭️ 다음 노래로 넘기기 (${currentVotesCount}/${activeCount})`
                     : '⏭️ 다음 노래로 넘기기'}
                 </span>
-                <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
+                <kbd className="hidden sm:inline-block rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold border transition-colors bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm dark:bg-black/40 dark:text-emerald-200 dark:border-emerald-400/30">
                   Ctrl + Enter
                 </kbd>
                 {revealSeconds > 0 && (
@@ -696,7 +696,7 @@ export default function SpeedMode() {
               className="liquid-input w-full px-5 py-3.5 text-base sm:text-lg font-bold shadow-inner placeholder:text-slate-400/70"
             />
             <p className="text-[11px] text-slate-400 text-center">
-              하나의 입력창으로 제목이나 가수를 각각 맞출 수 있으며, 넘기려면 <kbd className="font-mono bg-slate-800 px-1 rounded border border-slate-700 text-slate-300">Ctrl + Enter</kbd>를 누르세요.
+              하나의 입력창으로 제목이나 가수를 각각 맞출 수 있으며, 넘기려면 <kbd className="font-mono px-1.5 py-0.5 rounded border transition-colors bg-slate-100 text-slate-600 border-slate-300 shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">Ctrl + Enter</kbd>를 누르세요.
             </p>
           </div>
 
@@ -728,7 +728,7 @@ export default function SpeedMode() {
                     ? `⏭️ 이번 문제 넘기기 투표 (${currentVotesCount}/${activeCount})`
                     : '⏭️ 이번 문제 넘기기 (정답 확인)'}
                 </span>
-                <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono text-slate-300 border border-slate-600">
+                <kbd className="hidden sm:inline-block rounded px-1.5 py-0.5 text-[10px] font-mono border transition-colors bg-slate-100 text-slate-600 border-slate-300 shadow-sm dark:bg-black/40 dark:text-slate-300 dark:border-slate-600">
                   Ctrl + Enter
                 </kbd>
               </button>

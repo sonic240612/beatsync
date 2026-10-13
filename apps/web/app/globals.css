@@ -964,10 +964,19 @@ body[data-mode="light"] .liquid-btn-primary:active {
   color: #052e16 !important;
 }
 
+/* Keyboard Badges (kbd) in Light Mode */
+body[data-mode="light"] kbd {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
 body[data-mode="light"] .liquid-btn-primary kbd {
   background: rgba(5, 46, 22, 0.12) !important;
   color: #052e16 !important;
   border-color: rgba(5, 46, 22, 0.25) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* Secondary Button in Light Mode: Clean White Surface */
@@ -976,6 +985,11 @@ body[data-mode="light"] .liquid-btn-secondary {
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), inset 0 1px 1px #ffffff !important;
+}
+body[data-mode="light"] .liquid-btn-secondary:hover:not(:disabled) kbd {
+  background: #e2e8f0 !important;
+  color: #059669 !important;
+  border-color: rgba(5, 150, 105, 0.3) !important;
 }
 body[data-mode="light"] .liquid-btn-secondary:hover:not(:disabled) {
   border-color: #059669 !important;

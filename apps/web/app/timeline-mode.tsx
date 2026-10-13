@@ -628,7 +628,7 @@ export default function TimelineMode() {
                     ? `⏭️ 다음 턴으로 넘기기 (${currentVotesCount}/${activeCount})`
                     : '⏭️ 다음 턴으로 넘기기'}
                 </span>
-                <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
+                <kbd className="hidden sm:inline-block rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold border transition-colors bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm dark:bg-black/40 dark:text-emerald-200 dark:border-emerald-400/30">
                   Ctrl + Enter
                 </kbd>
               </button>
