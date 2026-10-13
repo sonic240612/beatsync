@@ -1,0 +1,27 @@
+{
+  "name": "beatsync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/start-all.mjs",
+    "dev:minimal": "node server/minimal.mjs",
+    "test:smoke": "node scripts/smoke.mjs",
+    "audio": "node scripts/make-demo-audio.mjs",
+    "dev:web": "npm --prefix apps/web run dev -- --hostname 127.0.0.1",
+    "build:web": "npm --prefix apps/web run build",
+    "test:practice": "node scripts/practice-browser.mjs"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.3",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}

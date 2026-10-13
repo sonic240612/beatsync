@@ -1,0 +1,530 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0b0d13;
+  --text: #f5f5f7;
+  --text-secondary: #9aa0a6;
+  --accent: #2997ff;
+  --accent-hover: #52aaff;
+  --spotify: #1ed760;
+  --spotify-hover: #26e66c;
+  --card-bg: rgba(18, 22, 34, 0.48); /* True translucent liquid glass */
+  --card-border: rgba(255, 255, 255, 0.12);
+  --glass-rim: rgba(255, 255, 255, 0.72);
+  --glass-shade: rgba(0, 0, 0, 0.7);
+  --surface-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.3);
+  --inner-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 1px 1px 2px var(--glass-rim), inset -1px -1px 2px var(--glass-shade);
+  --glow: 0 0 35px rgba(41, 151, 255, 0.2);
+  --glow-spotify: 0 0 35px rgba(30, 215, 96, 0.25);
+  color-scheme: dark;
+}
+
+body[data-mode="light"] {
+  --bg: #f4f6fa;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --accent: #0066cc;
+  --accent-hover: #0052a3;
+  --spotify: #059669;
+  --spotify-hover: #047857;
+  --card-bg: rgba(255, 255, 255, 0.58); /* True translucent frosted liquid glass */
+  --card-border: rgba(255, 255, 255, 0.75);
+  --glass-rim: rgba(255, 255, 255, 0.98);
+  --glass-shade: rgba(28, 38, 56, 0.1);
+  --surface-shadow: 0 12px 36px -8px rgba(24, 38, 64, 0.08), 0 2px 8px rgba(24, 38, 64, 0.04);
+  --inner-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.8), inset 1px 1px 2px var(--glass-rim), inset -1px -1px 2px var(--glass-shade);
+  --glow: 0 0 25px rgba(0, 102, 204, 0.12);
+  --glow-spotify: 0 0 25px rgba(5, 150, 105, 0.15);
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Pretendard", "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  transition: background-color 0.5s ease, color 0.3s ease;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ambient Liquid Glass Scene: Rich colors provide refraction through translucent glass */
+.liquid-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.liquid-scene-gradient {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle 750px at 15% 15%, rgba(0, 113, 227, 0.32), transparent 65%),
+    radial-gradient(circle 650px at 85% 20%, rgba(30, 215, 96, 0.26), transparent 65%),
+    radial-gradient(circle 800px at 50% 85%, rgba(139, 92, 246, 0.24), transparent 65%),
+    radial-gradient(circle 600px at 20% 80%, rgba(6, 182, 212, 0.2), transparent 60%);
+  filter: blur(40px);
+  transition: opacity 0.5s ease;
+}
+
+body[data-mode="light"] .liquid-scene-gradient {
+  background: 
+    radial-gradient(circle 750px at 15% 15%, rgba(0, 113, 227, 0.22), transparent 65%),
+    radial-gradient(circle 650px at 85% 20%, rgba(16, 185, 129, 0.2), transparent 65%),
+    radial-gradient(circle 800px at 50% 85%, rgba(168, 85, 247, 0.16), transparent 65%),
+    radial-gradient(circle 600px at 20% 80%, rgba(14, 165, 233, 0.18), transparent 60%);
+  filter: blur(40px);
+}
+
+/* Floating particles */
+.liquid-particles {
+  position: absolute;
+  inset: 0;
+}
+.liquid-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  animation: floatParticle 18s linear infinite;
+}
+body[data-mode="light"] .liquid-particle {
+  background: rgba(0, 113, 227, 0.15);
+}
+
+@keyframes floatParticle {
+  0% { transform: translateY(105vh) scale(0); opacity: 0; }
+  15% { opacity: 0.8; }
+  85% { opacity: 0.8; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* Liquid Glass Surface (Apple Reference Style) */
+.liquid-glass-card {
+  position: relative;
+  background: var(--card-bg);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--surface-shadow), var(--inner-rim);
+  border-radius: 28px;
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
+}
+
+.liquid-glass-card:hover {
+  box-shadow: var(--surface-shadow), var(--glow);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.liquid-glass-card:active {
+  /* Rock-solid anchor, zero vertical displacement */
+}
+
+body[data-mode="light"] .liquid-glass-card:hover {
+  border-color: rgba(0, 113, 227, 0.35);
+}
+
+/* Floating Pill Variant */
+.liquid-glass-pill {
+  position: relative;
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--surface-shadow), var(--inner-rim);
+  border-radius: 9999px;
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
+}
+
+.liquid-glass-pill:hover {
+  box-shadow: var(--surface-shadow), var(--glow);
+}
+
+.liquid-glass-pill:active {
+  /* Rock-solid anchor, zero vertical displacement */
+}
+
+/* Detached Floating Dropdown Menu (Floats cleanly over windows without expanding parent card) */
+.liquid-glass-dropdown {
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.8),
+              0 0 0 1px rgba(255, 255, 255, 0.1),
+              inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+body[data-mode="light"] .liquid-glass-dropdown {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.25),
+              0 0 0 1px rgba(0, 0, 0, 0.08),
+              inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+/* Specular Rim Border Light Effect (테두리 빛 효과: 마우스 위치에 따라 회전) */
+[data-liquid-surface] {
+  position: relative;
+  isolation: isolate;
+  --light-angle: 135deg;
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
+}
+
+/* Subtle Inner Rim Glass Depth */
+[data-liquid-surface]::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+              inset 1px 1px 2px var(--glass-rim),
+              inset -1px -1px 2px var(--glass-shade);
+}
+
+/* Conic Specular Border Rim Light (마우스 커서 방향을 따라 테두리 둘레를 움직이는 빛) */
+[data-liquid-surface]::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--light-angle, 135deg),
+    var(--glass-rim),
+    transparent 18%,
+    var(--glass-shade) 32%,
+    transparent 48%,
+    var(--glass-rim) 64%,
+    transparent 83%,
+    var(--glass-rim)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.75;
+  transition: opacity 0.25s ease;
+}
+
+[data-liquid-surface]:hover::after {
+  opacity: 1;
+}
+
+[data-liquid-surface]:hover {
+  box-shadow: var(--surface-shadow), var(--glow);
+}
+
+[data-liquid-surface]:active {
+  /* Rock-solid anchor, zero vertical displacement */
+}
+
+/* When data-liquid-surface is applied to small buttons or header pills */
+header[data-liquid-surface]:hover,
+div[data-liquid-surface].category-control:hover {
+  /* Rock-solid anchor */
+}
+
+/* Interactive Controls & Buttons */
+.liquid-btn-primary {
+  background: linear-gradient(135deg, var(--spotify), #17b34d);
+  color: #0b150f;
+  font-weight: 700;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.liquid-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(30, 215, 96, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  filter: brightness(1.04);
+}
+.liquid-btn-primary:active:not(:disabled) {
+  filter: brightness(0.93);
+  box-shadow: 0 2px 6px rgba(30, 215, 96, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.liquid-btn-secondary {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--surface-shadow), var(--inner-rim);
+  border-radius: 18px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.liquid-btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.liquid-btn-secondary:active:not(:disabled) {
+  filter: brightness(0.92);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Liquid Input */
+.liquid-input {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+  border-radius: 16px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.25s ease;
+}
+body[data-mode="light"] .liquid-input {
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.liquid-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.25);
+}
+
+/* Range Slider Styling (Apple Liquid Style) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  outline: none;
+}
+body[data-mode="light"] input[type="range"] {
+  background: rgba(0, 0, 0, 0.12);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--spotify);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  filter: brightness(1.1);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--spotify);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+/* Sound Wave Visualizer Bars */
+.sound-bar {
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--spotify), var(--accent));
+  transition: height 0.2s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 130, 0.3);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 130, 0.5);
+}
+
+/* =========================================================
+   Light Mode Contrast & Accessibility Harmonization
+   ========================================================= */
+body[data-mode="light"] {
+  color: #0f172a;
+}
+
+/* High contrast typography in light mode */
+body[data-mode="light"] .text-slate-400 {
+  color: #475569 !important; /* Slate-600: 7:1 contrast on light surface */
+}
+body[data-mode="light"] .text-slate-300 {
+  color: #334155 !important; /* Slate-700: 9:1 contrast */
+}
+body[data-mode="light"] .text-slate-200 {
+  color: #0f172a !important; /* Slate-900: High contrast black */
+}
+body[data-mode="light"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Emerald: Replace glaring neon green with calm, accessible Forest Green */
+body[data-mode="light"] .text-emerald-400,
+body[data-mode="light"] .text-emerald-300,
+body[data-mode="light"] .text-emerald-200 {
+  color: #047857 !important; /* Emerald-700: 5.5:1 contrast */
+}
+
+/* Cyan & Blue accents */
+body[data-mode="light"] .text-cyan-400,
+body[data-mode="light"] .text-cyan-300 {
+  color: #0284c7 !important;
+}
+body[data-mode="light"] .text-blue-400 {
+  color: #1d4ed8 !important;
+}
+
+/* Amber: Replace washed-out neon yellow with rich honey amber */
+body[data-mode="light"] .text-amber-200,
+body[data-mode="light"] .text-amber-300,
+body[data-mode="light"] .text-amber-400 {
+  color: #92400e !important; /* Amber-800: 6:1 contrast */
+}
+
+/* Rose: Deep berry red */
+body[data-mode="light"] .text-rose-200,
+body[data-mode="light"] .text-rose-300 {
+  color: #9f1239 !important; /* Rose-800 */
+}
+
+/* Badges, Pills & Chip Backgrounds */
+body[data-mode="light"] .bg-slate-800\/40,
+body[data-mode="light"] .bg-slate-800\/50,
+body[data-mode="light"] .bg-slate-800\/60,
+body[data-mode="light"] .bg-slate-800\/20,
+body[data-mode="light"] .bg-slate-800 {
+  background-color: rgba(241, 245, 249, 0.85) !important;
+  color: #1e293b !important;
+}
+
+body[data-mode="light"] .bg-emerald-400\/10,
+body[data-mode="light"] .bg-emerald-400\/15,
+body[data-mode="light"] .bg-emerald-400\/20,
+body[data-mode="light"] .bg-emerald-400\/25,
+body[data-mode="light"] .bg-emerald-400\/5 {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+}
+
+body[data-mode="light"] .bg-amber-400\/10,
+body[data-mode="light"] .bg-amber-400\/20 {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+}
+
+body[data-mode="light"] .bg-rose-500\/10,
+body[data-mode="light"] .bg-rose-500\/20 {
+  background-color: #fff1f2 !important;
+  color: #9f1239 !important;
+}
+
+/* Borders in Light Mode */
+body[data-mode="light"] .border-slate-700\/40,
+body[data-mode="light"] .border-slate-700\/50,
+body[data-mode="light"] .border-slate-700\/60,
+body[data-mode="light"] .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+body[data-mode="light"] .border-emerald-400\/20,
+body[data-mode="light"] .border-emerald-400\/30,
+body[data-mode="light"] .border-emerald-400\/40,
+body[data-mode="light"] .border-emerald-400\/50,
+body[data-mode="light"] .border-emerald-400 {
+  border-color: #a7f3d0 !important;
+}
+
+body[data-mode="light"] .border-amber-400\/30,
+body[data-mode="light"] .border-amber-400\/40 {
+  border-color: #fde68a !important;
+}
+
+body[data-mode="light"] .border-rose-500\/30,
+body[data-mode="light"] .border-rose-500\/40,
+body[data-mode="light"] .border-rose-500\/50 {
+  border-color: #fecdd3 !important;
+}
+
+/* Hero Gradient Text in Light Mode: Saturated Apple Emerald/Blue instead of glare */
+body[data-mode="light"] .bg-clip-text {
+  background-image: linear-gradient(135deg, #059669, #0284c7, #2563eb) !important;
+}
+
+/* Input Fields in Light Mode */
+body[data-mode="light"] .liquid-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+body[data-mode="light"] .liquid-input:focus {
+  border-color: #0066cc !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15) !important;
+}
+body[data-mode="light"] .liquid-input::placeholder {
+  color: #94a3b8 !important;
+}
+body[data-mode="light"] select.liquid-input option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Primary Button in Light Mode: Crisp White Text on Apple Forest Green */
+body[data-mode="light"] .liquid-btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+}
+body[data-mode="light"] .liquid-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05) !important;
+}
+
+/* Secondary Button in Light Mode: Clean White Surface */
+body[data-mode="light"] .liquid-btn-secondary {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+body[data-mode="light"] .liquid-btn-secondary:hover:not(:disabled) {
+  border-color: #0066cc !important;
+  color: #0066cc !important;
+}
+
+/* Waveform sound bars in light mode */
+body[data-mode="light"] .sound-bar {
+  background: linear-gradient(180deg, #059669, #0284c7) !important;
+}
+
+/* Prevent hover states from turning text white on light backgrounds */
+body[data-mode="light"] .hover\:text-white:hover,
+body[data-mode="light"] .hover\:text-slate-200:hover,
+body[data-mode="light"] .hover\:text-slate-100:hover {
+  color: #0f172a !important;
+}
+
+/* Neutral text inside badges/counters in light mode */
+body[data-mode="light"] span.text-white:not(.liquid-btn-primary *) {
+  color: #0f172a !important;
+}
+
+/* Except inside primary action buttons which have dark green background */
+body[data-mode="light"] .liquid-btn-primary,
+body[data-mode="light"] .liquid-btn-primary *,
+body[data-mode="light"] .liquid-btn-primary:hover,
+body[data-mode="light"] .liquid-btn-primary:active {
+  color: #ffffff !important;
+}
