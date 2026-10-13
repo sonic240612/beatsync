@@ -118,7 +118,7 @@ export default function Home() {
   };
 
   return (
-    <main className={`mx-auto min-h-screen px-4 py-6 sm:px-6 sm:py-10 transition-all ${
+    <main className={`mx-auto min-h-screen px-4 py-6 sm:px-6 sm:py-10 transition-[max-width] duration-200 ease-out ${
       state?.phase !== 'lobby' && state?.settings.mode === 'timeline'
         ? 'max-w-4xl lg:max-w-6xl xl:max-w-7xl'
         : 'max-w-4xl'
@@ -728,7 +728,6 @@ export default function Home() {
               {isHost ? (
                 <button
                   type="button"
-                  data-liquid-surface
                   onClick={() =>
                     act(async () => {
                       if (state.settings.musicSource === 'spotify_playlist') {

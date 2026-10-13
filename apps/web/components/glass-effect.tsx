@@ -344,6 +344,8 @@ export function GlassEffectProvider() {
         if (!motionEnabled()) resetInteraction(surface, true);
       });
 
+      refreshAllLenses(false);
+
       if (!motionEnabled() && motionFrame) {
         cancelAnimationFrame(motionFrame);
         motionFrame = 0;
@@ -415,7 +417,12 @@ export function GlassEffectProvider() {
     }
 
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleRefresh) : null;
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            scheduleRefresh();
+            refreshAllLenses(false);
+          })
+        : null;
 
     function registerSurface(surface: HTMLElement) {
       if (records.has(surface)) return;
@@ -562,7 +569,19 @@ export function GlassEffectProvider() {
       );
     }
 
-    function buttonGeometry(button: HTMLElement) {
+    function buttonGeometry(button: HTMLElement, group?: HTMLElement) {
+      if (group) {
+        const groupRect = group.getBoundingClientRect();
+        const btnRect = button.getBoundingClientRect();
+        if (groupRect.width > 0 && btnRect.width > 0) {
+          return {
+            x: btnRect.left - groupRect.left,
+            y: btnRect.top - groupRect.top,
+            width: btnRect.width,
+            height: btnRect.height,
+          };
+        }
+      }
       return {
         x: button.offsetLeft,
         y: button.offsetTop,
@@ -699,6 +718,7 @@ export function GlassEffectProvider() {
       record.group.style.setProperty('--lens-scale', scale);
       record.group.style.setProperty('--lens-rotate', '0deg');
       record.group.style.setProperty('--lens-bloom', `${record.value.bloom.toFixed(5)}`);
+      record.lens.style.opacity = record.value.width > 8 ? '1' : '0';
       updateLensOptics(record);
     }
 
@@ -819,7 +839,7 @@ export function GlassEffectProvider() {
     function followPointer(record: LensGroupRecord, clientX: number) {
       const button = nearestButton(record, clientX);
       if (!button || !record.drag) return;
-      const geom = buttonGeometry(button);
+      const geom = buttonGeometry(button, record.group);
       if (motionEnabled()) {
         const inset = parseFloat(getComputedStyle(record.group).paddingLeft) || 0;
         const center = localPointerX(record, clientX) - record.drag.grabOffset;
@@ -860,7 +880,7 @@ export function GlassEffectProvider() {
         }
       }
       const selected = selectedButton(record);
-      if (selected) aimLens(record, buttonGeometry(selected));
+      if (selected) aimLens(record, buttonGeometry(selected, record.group));
     }
 
     function registerLensGroup(group: HTMLElement) {
@@ -905,7 +925,7 @@ export function GlassEffectProvider() {
         finishDrag(record, null, true);
         record.suppressClickUntil = 0;
         record.pressed = true;
-        const geom = buttonGeometry(button);
+        const geom = buttonGeometry(button, record.group);
         record.drag = {
           id: event.pointerId,
           startX: event.clientX,
@@ -992,7 +1012,7 @@ export function GlassEffectProvider() {
         record.buttons = Array.from(group.querySelectorAll<HTMLElement>('.tab-btn, button'));
         const sel = selectedButton(record);
         if (sel) {
-          aimLens(record, buttonGeometry(sel));
+          aimLens(record, buttonGeometry(sel, record.group));
         }
       });
       groupObserver.observe(group, {
@@ -1024,7 +1044,7 @@ export function GlassEffectProvider() {
       // Initial alignment
       const selected = selectedButton(record);
       if (selected) {
-        aimLens(record, buttonGeometry(selected), true);
+        aimLens(record, buttonGeometry(selected, record.group), true);
       }
     }
 
@@ -1040,9 +1060,20 @@ export function GlassEffectProvider() {
       lensGroups.forEach(record => {
         if (!record.drag) {
           const btn = selectedButton(record);
-          if (btn) aimLens(record, buttonGeometry(btn), immediate);
+          if (btn) aimLens(record, buttonGeometry(btn, record.group), immediate);
         }
       });
+    }
+
+    function scheduleLensRealignment() {
+      requestAnimationFrame(() => {
+        refreshAllLenses(true);
+        requestAnimationFrame(() => {
+          refreshAllLenses(true);
+        });
+      });
+      setTimeout(() => refreshAllLenses(true), 60);
+      setTimeout(() => refreshAllLenses(false), 220);
     }
 
     // Dynamic Discovery: Query and observe all current and future [data-liquid-surface] and [data-liquid-segment-group] elements
@@ -1065,6 +1096,7 @@ export function GlassEffectProvider() {
       lensGroups.forEach((_, el) => {
         if (!activeGroupSet.has(el)) unregisterLensGroup(el);
       });
+      if (foundGroups.length > 0) scheduleLensRealignment();
     }
 
     syncSurfaces();
@@ -1072,7 +1104,7 @@ export function GlassEffectProvider() {
     const domMutationObserver = new MutationObserver(() => {
       syncSurfaces();
       scheduleRefresh();
-      refreshAllLenses(false);
+      scheduleLensRealignment();
     });
     domMutationObserver.observe(document.body, {
       childList: true,

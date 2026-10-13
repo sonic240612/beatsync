@@ -494,6 +494,13 @@ body[data-mode="light"] .apple-glass-row:hover {
   display: none !important;
 }
 
+/* Hide uninitialized or 0-width selection lens artifacts */
+:not([style*="--lens-width"]) > .selection-lens,
+[style*="--lens-width: 0px"] > .selection-lens,
+[style*="--lens-width: 0.000px"] > .selection-lens {
+  opacity: 0 !important;
+}
+
 /* Apple SharePlay Participant Card - exact design parity with apple-glass-row */
 .apple-glass-player-card {
   position: relative;

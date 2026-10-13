@@ -536,8 +536,96 @@ export default function TimelineMode() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-        {/* Left Column: Interactive Gameplay Area */}
-        <div className="lg:col-span-8 xl:col-span-8 space-y-4 sm:space-y-5 min-w-0">
+        {/* Left Column (PC): Participant Timeline Status */}
+        <aside className="order-2 lg:order-1 lg:col-span-4 xl:col-span-4 lg:sticky lg:top-24 space-y-3 min-w-0">
+          <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-700/50">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>👥</span> 참가자별 타임라인 현황
+              </h4>
+              <span className="text-[11px] font-mono font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                목표 {targetCards}장
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {(state?.players || []).map(player => {
+                const pTimeline = state?.timelines?.[player.id] ?? [];
+                const count = pTimeline.length;
+                const isCurrentTurn = player.id === turn;
+                const isMe = player.id === me;
+                const percent = Math.min(100, Math.round((count / targetCards) * 100));
+
+                return (
+                  <div
+                    key={player.id}
+                    className={`rounded-xl p-3 border transition-all ${
+                      isCurrentTurn
+                        ? 'border-emerald-400/80 bg-emerald-400/15 shadow-md shadow-emerald-500/10'
+                        : 'border-slate-700/50 bg-slate-800/40'
+                    }`}
+                  >
+                    {/* Top Row: Name, Badges, Count */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            isCurrentTurn ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-white'
+                          }`}
+                        >
+                          {player.name.slice(0, 1)}
+                        </div>
+                        <span className="text-sm font-semibold truncate text-slate-200">
+                          {player.name}
+                          {isMe && <span className="ml-1 text-xs text-emerald-400 font-bold">(나)</span>}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isCurrentTurn && (
+                          <span className="rounded bg-emerald-400/25 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 animate-pulse">
+                            현재 턴
+                          </span>
+                        )}
+                        <span className="font-mono text-xs font-bold text-amber-300">
+                          {count}/{targetCards}장
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-slate-700/80 rounded-full overflow-hidden mt-2">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full transition-all duration-300"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+
+                    {/* Chronological Year Badges Mini-Deck */}
+                    <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-slate-700/30">
+                      {pTimeline.length === 0 ? (
+                        <span className="text-[10px] text-slate-500">보관된 카드 없음 (0장)</span>
+                      ) : (
+                        pTimeline.map((card, idx) => (
+                          <span
+                            key={`${card.trackId}-${idx}`}
+                            className="inline-flex items-center rounded bg-slate-800/90 border border-slate-700/80 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-300 shadow-sm"
+                            title={`${card.title || '곡'} - ${card.artist || '가수'} (${card.year}년)`}
+                          >
+                            {card.year}년
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* Right Column (PC): Interactive Gameplay Area */}
+        <div className="order-1 lg:order-2 lg:col-span-8 xl:col-span-8 space-y-4 sm:space-y-5 min-w-0">
           {/* Audio Autoplay Block Notice */}
           {audioBlocked && (
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-5 py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
@@ -917,94 +1005,6 @@ export default function TimelineMode() {
       </section>
 
         </div>
-
-        {/* Right Column: Participant Timeline Status (PC Sticky Sidebar) */}
-        <aside className="lg:col-span-4 xl:col-span-4 lg:sticky lg:top-24 space-y-3 min-w-0">
-          <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 space-y-3 shadow-lg">
-            <div className="flex items-center justify-between pb-1 border-b border-slate-700/50">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <span>👥</span> 참가자별 타임라인 현황
-              </h4>
-              <span className="text-[11px] font-mono font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/30">
-                목표 {targetCards}장
-              </span>
-            </div>
-
-            <div className="space-y-2.5">
-              {(state?.players || []).map(player => {
-                const pTimeline = state?.timelines?.[player.id] ?? [];
-                const count = pTimeline.length;
-                const isCurrentTurn = player.id === turn;
-                const isMe = player.id === me;
-                const percent = Math.min(100, Math.round((count / targetCards) * 100));
-
-                return (
-                  <div
-                    key={player.id}
-                    className={`rounded-xl p-3 border transition-all ${
-                      isCurrentTurn
-                        ? 'border-emerald-400/80 bg-emerald-400/15 shadow-md shadow-emerald-500/10'
-                        : 'border-slate-700/50 bg-slate-800/40'
-                    }`}
-                  >
-                    {/* Top Row: Name, Badges, Count */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                            isCurrentTurn ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-white'
-                          }`}
-                        >
-                          {player.name.slice(0, 1)}
-                        </div>
-                        <span className="text-sm font-semibold truncate text-slate-200">
-                          {player.name}
-                          {isMe && <span className="ml-1 text-xs text-emerald-400 font-bold">(나)</span>}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isCurrentTurn && (
-                          <span className="rounded bg-emerald-400/25 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 animate-pulse">
-                            현재 턴
-                          </span>
-                        )}
-                        <span className="font-mono text-xs font-bold text-amber-300">
-                          {count}/{targetCards}장
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full h-1.5 bg-slate-700/80 rounded-full overflow-hidden mt-2">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full transition-all duration-300"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-
-                    {/* Chronological Year Badges Mini-Deck */}
-                    <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-slate-700/30">
-                      {pTimeline.length === 0 ? (
-                        <span className="text-[10px] text-slate-500">보관된 카드 없음 (0장)</span>
-                      ) : (
-                        pTimeline.map((card, idx) => (
-                          <span
-                            key={`${card.trackId}-${idx}`}
-                            className="inline-flex items-center rounded bg-slate-800/90 border border-slate-700/80 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-300 shadow-sm"
-                            title={`${card.title || '곡'} - ${card.artist || '가수'} (${card.year}년)`}
-                          >
-                            {card.year}년
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
       </div>
     </section>
   );

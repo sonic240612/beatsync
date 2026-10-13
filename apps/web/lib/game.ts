@@ -298,6 +298,7 @@ export const useGame = create<Store>((set, get) => ({
             me: prev.me || session?.playerId || null,
             state,
             reveal: nextReveal,
+            over: state.phase === 'lobby' ? null : prev.over,
           };
         });
       });
@@ -456,6 +457,9 @@ export const useGame = create<Store>((set, get) => ({
 
   reset: async () => {
     const result = await get().request('game:reset', {});
+    if (result?.ok) {
+      set({ over: null, reveal: null });
+    }
     return !!result?.ok;
   },
 }));
