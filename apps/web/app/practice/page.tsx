@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { tracks as catalog } from '@/shared/tracks.js';
 import { useGame } from '@/lib/game';
 import { VolumeControl } from '@/components/volume-control';
+import { LiquidSegmentGroup } from '@/components/liquid-segment-group';
 
 type Track = (typeof catalog)[number];
 
@@ -14,6 +15,7 @@ const CATEGORIES = [
   { id: 'kpop_hits', label: '🔥 K-Pop 메가 히트곡' },
   { id: 'kpop_retro', label: '📼 90~2000년대 가요' },
   { id: 'pop_hits', label: '🌐 글로벌 팝송 TOP' },
+  { id: 'jpop_hits', label: '🇯🇵 J-Pop 히트곡' },
   { id: 'spotify_random', label: '🎲 완전 랜덤 셔플' },
 ] as const;
 
@@ -30,6 +32,9 @@ export default function PracticePage() {
     }
     if (selectedCategory === 'pop_all') {
       return catalog.filter(t => t.category === 'pop_hits' || t.category === 'pop_all');
+    }
+    if (selectedCategory === 'jpop_all') {
+      return catalog.filter(t => t.category === 'jpop_hits' || t.category === 'jpop_all');
     }
     return catalog.filter(t => t.category === selectedCategory);
   }, [selectedCategory]);
@@ -164,6 +169,8 @@ export default function PracticePage() {
             ← 메인 대기실로
           </a>
 
+
+
           <button
             onClick={toggleMode}
             type="button"
@@ -197,20 +204,16 @@ export default function PracticePage() {
         </section>
 
         {/* Category Selector Tabs */}
-        <div data-liquid-surface className="liquid-glass-card p-3 max-w-xl mx-auto flex flex-wrap gap-2 justify-center">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`rounded-2xl px-4 py-2.5 text-xs font-bold transition-all ${
-                selectedCategory === cat.id
-                  ? 'border border-emerald-400 bg-emerald-400/20 text-emerald-300 shadow-sm'
-                  : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        <div className="flex justify-center">
+          <LiquidSegmentGroup
+            value={selectedCategory}
+            onChange={val => setSelectedCategory(val)}
+            options={CATEGORIES.map(cat => ({
+              value: cat.id,
+              label: cat.label,
+            }))}
+            accent="emerald"
+          />
         </div>
 
         {/* Track Selector Pills / Random Shuffle Banner */}

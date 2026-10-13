@@ -5,6 +5,7 @@ import SpeedMode from './speed-mode';
 import TimelineMode from './timeline-mode';
 import { VolumeControl } from '@/components/volume-control';
 import { LiquidSelect } from '@/components/liquid-select';
+import { LiquidSegmentGroup } from '@/components/liquid-segment-group';
 
 const TARGET_LABEL = { title: '제목만', artist: '가수만', both: '제목 + 가수' } as const;
 const MODE_LABEL = { speed: '⚡ 스피드 퀴즈', timeline: '⏳ 타임라인 카드' } as const;
@@ -16,6 +17,7 @@ const MUSIC_SOURCE_OPTIONS: { id: MusicSource; label: string; desc: string }[] =
   { id: 'kpop_hits', label: '🔥 K-Pop 메가 히트곡', desc: '뉴진스, BTS, 아이유, 블랙핑크 등 인기곡' },
   { id: 'kpop_retro', label: '📼 90~2000년대 추억 가요', desc: '서태지, 쿨, god, 이적 등 세대를 초월한 명곡' },
   { id: 'pop_hits', label: '🌐 글로벌 팝송 TOP', desc: 'Bruno Mars, Ed Sheeran, The Weeknd 등' },
+  { id: 'jpop_hits', label: '🇯🇵 J-Pop 히트곡', desc: 'YOASOBI, 요네즈 켄시, 히게단, 아이묭 등 인기곡' },
   { id: 'spotify_random', label: '🎲 Spotify 완전 랜덤 셔플', desc: '장르/시대 구분 없이 무작위로 출제되는 익스트림 퀴즈' },
   { id: 'spotify_playlist', label: '🔗 Spotify 플레이리스트', desc: 'Spotify 공개 플레이리스트 URL 입력' },
 ];
@@ -143,7 +145,8 @@ export default function Home() {
           {/* Volume Control Button */}
           <VolumeControl />
 
-          {/* Theme Toggle Button */}
+
+          {/* Theme Toggle Button (Light / Dark) */}
           <button
             onClick={toggleMode}
             type="button"
@@ -184,7 +187,7 @@ export default function Home() {
 
           {/* Centered Unified Single Nickname Card */}
           <div className="max-w-md mx-auto w-full">
-            <div data-liquid-surface className="liquid-glass-card p-5 sm:p-6 text-center space-y-3 shadow-xl border border-slate-700/60">
+            <div data-liquid-surface className="liquid-glass-card p-5 sm:p-6 text-center space-y-3 shadow-xl">
               <label htmlFor="unified-nickname" className="block text-xs sm:text-sm font-bold tracking-wider text-slate-300 uppercase">
                 👤 내 닉네임 설정
               </label>
@@ -298,57 +301,81 @@ export default function Home() {
       {/* In-Room View */}
       {inRoom && (
         <div className="space-y-6">
-          {/* Room Header Pill */}
-          <section data-liquid-surface className="liquid-glass-card flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
-            <div className="flex items-center gap-4">
-              <div>
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">방 코드</span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span
-                    className={`font-mono text-3xl font-black tracking-widest text-emerald-400 ${
-                      showRoomCode ? '' : 'select-none'
-                    }`}
-                  >
-                    {showRoomCode ? state.code : '•'.repeat(state.code?.length || 6)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowRoomCode(prev => !prev)}
-                    title={showRoomCode ? '방 코드 숨기기' : '방 코드 보이기'}
-                    aria-label={showRoomCode ? '방 코드 숨기기' : '방 코드 보이기'}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:text-white hover:border-emerald-400/50 transition-colors"
-                  >
-                    {showRoomCode ? (
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={copyRoomCode}
-                    title="코드 복사"
-                    className="rounded-lg border border-slate-700 bg-slate-800/60 px-2 py-1 text-xs text-slate-300 hover:text-white transition-colors"
-                  >
-                    {copied ? '복사됨!' : '복사'}
-                  </button>
+          {/* Room Header Card (Apple visionOS Floating Bar) */}
+          <section className="liquid-glass-card flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+              {/* Room Code Display Capsule */}
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">방 코드</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span
+                      className={`font-mono text-2xl sm:text-3xl font-black tracking-widest text-emerald-400 ${
+                        showRoomCode ? '' : 'select-none tracking-[0.25em]'
+                      }`}
+                    >
+                      {showRoomCode ? state.code : '••••••'}
+                    </span>
+                    <button
+                      type="button"
+                      data-liquid-surface
+                      onClick={() => setShowRoomCode(prev => !prev)}
+                      title={showRoomCode ? '방 코드 숨기기' : '방 코드 보이기'}
+                      aria-label={showRoomCode ? '방 코드 숨기기' : '방 코드 보이기'}
+                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:border-emerald-400/40 transition-colors shadow-sm"
+                    >
+                      {showRoomCode ? (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      data-liquid-surface
+                      onClick={copyRoomCode}
+                      title="코드 복사"
+                      className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:text-white hover:border-emerald-400/40 transition-colors shadow-sm"
+                    >
+                      {copied ? (
+                        <>
+                          <span className="text-emerald-400 font-bold">✓</span>
+                          <span>복사됨!</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <span>복사</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-right">
-              <div>
-                <span className="text-xs text-slate-400">참가 인원</span>
-                <p className="text-base font-bold text-slate-200">{state.players.length} / 8명</p>
+            <div className="flex items-center gap-3">
+              {/* Participant Count Pill */}
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
+                <span className="text-xs font-bold text-slate-200">
+                  참가자 <span className="text-emerald-400 font-mono font-black">{state.players.length}</span> / 8명
+                </span>
               </div>
+
+              {/* Leave Room Action */}
               <button
+                type="button"
+                data-liquid-surface
                 onClick={() => act(leaveRoom)}
-                className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition-colors"
+                className="rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-4 py-2 text-xs font-bold text-rose-300 transition-colors shadow-sm"
               >
                 나가기
               </button>
@@ -358,53 +385,67 @@ export default function Home() {
           {/* Lobby Settings Card */}
           {state.phase === 'lobby' && (
             <section data-liquid-surface className="liquid-glass-card p-6 sm:p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/50 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold">게임 설정</h3>
-                  <p className="text-xs text-slate-400">
-                    {isHost ? '원하는 게임 모드와 음악 카탈로그를 설정하세요.' : '호스트가 설정을 변경하고 있습니다.'}
-                  </p>
+              {/* Settings Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="apple-glass-badge-icon bg-gradient-to-br from-emerald-500/30 to-teal-500/20 text-emerald-300 border border-emerald-400/30">
+                    ⚙️
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold tracking-tight text-white">게임 설정</h3>
+                    <p className="text-xs text-slate-400">
+                      {isHost ? '원하는 게임 모드와 음악 카탈로그를 설정하세요.' : '호스트가 게임 설정을 조정하고 있습니다.'}
+                    </p>
+                  </div>
                 </div>
                 {!isHost && (
-                  <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">
+                  <span className="flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/10 px-3 py-1 text-xs font-medium text-slate-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                     호스트 전용 설정
                   </span>
                 )}
               </div>
 
-              {/* Setting Controls */}
-              <div className="grid gap-5 sm:grid-cols-2">
+              {/* Setting Inset Rows */}
+              <div className="grid gap-4 sm:grid-cols-2">
                 {/* Game Mode */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 uppercase">게임 모드</label>
-                  <div className="mt-2 flex gap-2">
-                    {(['speed', 'timeline'] as const).map(modeKey => (
-                      <button
-                        key={modeKey}
-                        disabled={!isHost || busy}
-                        onClick={() => act(() => configure({ mode: modeKey }))}
-                        className={`flex-1 rounded-xl border px-3 py-2.5 text-xs font-bold transition-all ${
-                          state.settings.mode === modeKey
-                            ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300 shadow-sm'
-                            : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {MODE_LABEL[modeKey]}
-                      </button>
-                    ))}
+                <div className="apple-glass-row">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">⚡</span>
+                    <div>
+                      <span className="text-[13.5px] font-bold text-slate-200">게임 모드</span>
+                      <p className="text-xs text-slate-400">
+                        {state.settings.mode === 'speed' ? '곡명/가수를 맞히는 스피드 퀴즈' : '발매 연도순 배치 타임라인 배틀'}
+                      </p>
+                    </div>
                   </div>
+                  <LiquidSegmentGroup
+                    value={state.settings.mode}
+                    onChange={modeKey => configure({ mode: modeKey })}
+                    disabled={!isHost}
+                    options={[
+                      { value: 'speed', label: '스피드 퀴즈', icon: '⚡' },
+                      { value: 'timeline', label: '타임라인', icon: '🃏' },
+                    ]}
+                    accent="emerald"
+                    className="w-full"
+                  />
                 </div>
 
                 {/* Music Source */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
-                    음악 소스 (Spotify Free 연동)
-                  </label>
+                <div className="apple-glass-row">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🎵</span>
+                    <div>
+                      <span className="text-[13.5px] font-bold text-slate-200">음악 소스</span>
+                      <p className="text-xs text-slate-400">Spotify Free 연동 카탈로그</p>
+                    </div>
+                  </div>
                   <LiquidSelect
-                    disabled={!isHost || busy}
+                    disabled={!isHost}
                     value={state.settings.musicSource || 'kpop_hits'}
                     onChange={val => {
-                      act(() => configure({ musicSource: val }));
+                      configure({ musicSource: val });
                     }}
                     options={MUSIC_SOURCE_OPTIONS}
                   />
@@ -412,10 +453,14 @@ export default function Home() {
 
                 {/* Custom Spotify Playlist URL if selected */}
                 {state.settings.musicSource === 'spotify_playlist' && (
-                  <div className="sm:col-span-2 space-y-2">
-                    <label className="text-xs font-semibold text-slate-300 uppercase">
-                      Spotify 플레이리스트 설정
-                    </label>
+                  <div className="apple-glass-row sm:col-span-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg">🔗</span>
+                      <div>
+                        <span className="text-[13.5px] font-bold text-slate-200">Spotify 플레이리스트 URL</span>
+                        <p className="text-xs text-slate-400">공개 플레이리스트 링크 또는 ID 입력</p>
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <input
                         disabled={!isHost || busy}
@@ -428,14 +473,14 @@ export default function Home() {
                           }
                         }}
                         placeholder="https://open.spotify.com/playlist/... 또는 플레이리스트 ID"
-                        className="liquid-input flex-1 px-4 py-2 text-xs"
+                        className="liquid-input flex-1 px-4 py-2.5 text-xs"
                       />
                       {isHost && (
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() => handleApplyPlaylist()}
-                          className="liquid-btn-secondary px-4 py-2 text-xs font-bold"
+                          className="liquid-btn-secondary px-4 py-2 text-xs font-bold shrink-0"
                         >
                           {busy ? '확인 중…' : '적용'}
                         </button>
@@ -446,10 +491,10 @@ export default function Home() {
 
                 {/* Spotify Random Shuffle Notice */}
                 {state.settings.musicSource === 'spotify_random' && (
-                  <div className="sm:col-span-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-3.5 text-xs text-emerald-300 flex items-center gap-2.5">
-                    <span className="text-base shrink-0">🎲</span>
+                  <div className="sm:col-span-2 rounded-2xl border border-emerald-300 dark:border-emerald-400/25 bg-emerald-100/70 dark:bg-emerald-400/10 p-3.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm">
+                    <span className="text-lg shrink-0">🎲</span>
                     <div className="leading-relaxed">
-                      <strong>완전 랜덤 셔플 활성화:</strong> 모든 장르(K-Pop, 팝송, 레트로 등)와 시대를 무작위로 섞어 매 라운드 예측 불가능한 문제가 출제됩니다!
+                      <strong className="font-black text-emerald-950 dark:text-white">완전 랜덤 셔플 활성화:</strong> K-Pop, Pop, J-Pop 등 모든 장르와 연대를 무작위로 혼합하여 매 라운드 예측 불가능한 문제가 출제됩니다!
                     </div>
                   </div>
                 )}
@@ -457,148 +502,195 @@ export default function Home() {
                 {/* Speed Mode Options */}
                 {state.settings.mode === 'speed' && (
                   <>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-300 uppercase">정답 판정 기준</label>
-                      <div className="mt-2 flex gap-2">
-                        {(['title', 'artist', 'both'] as const).map(targetKey => (
-                          <button
-                            key={targetKey}
-                            disabled={!isHost || busy}
-                            onClick={() => act(() => configure({ target: targetKey }))}
-                            className={`flex-1 rounded-xl border px-2 py-2 text-xs font-bold transition-all ${
-                              state.settings.target === targetKey
-                                ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300'
-                                : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            {TARGET_LABEL[targetKey]}
-                          </button>
-                        ))}
+                    {/* Answer Criteria */}
+                    <div className="apple-glass-row">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">🎯</span>
+                        <div>
+                          <span className="text-[13.5px] font-bold text-slate-200">정답 판정 기준</span>
+                          <p className="text-xs text-slate-400">채점 대상 (노래 제목 / 가수)</p>
+                        </div>
                       </div>
+                      <LiquidSegmentGroup
+                        value={state.settings.target}
+                        onChange={targetKey => configure({ target: targetKey })}
+                        disabled={!isHost}
+                        options={[
+                          { value: 'title', label: '노래 제목' },
+                          { value: 'artist', label: '가수 이름' },
+                          { value: 'both', label: '제목 + 가수' },
+                        ]}
+                        accent="emerald"
+                        className="w-full"
+                      />
                     </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-slate-300 uppercase">라운드 수</label>
-                      <div className="mt-2 flex gap-2">
-                        {[10, 20, 30].map(r => (
-                          <button
-                            key={r}
-                            disabled={!isHost || busy}
-                            onClick={() => act(() => configure({ rounds: r }))}
-                            className={`flex-1 rounded-xl border px-2 py-2 text-xs font-bold transition-all ${
-                              state.settings.rounds === r
-                                ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300'
-                                : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            {r}곡
-                          </button>
-                        ))}
+                    {/* Preview Snippet Duration */}
+                    <div className="apple-glass-row">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">⏱️</span>
+                        <div>
+                          <span className="text-[13.5px] font-bold text-slate-200">미리듣기 재생 시간</span>
+                          <p className="text-xs text-slate-400">한 라운드 당 음원 재생 길이</p>
+                        </div>
                       </div>
+                      <LiquidSegmentGroup
+                        value={state.settings.snippetSeconds}
+                        onChange={s => configure({ snippetSeconds: s })}
+                        disabled={!isHost}
+                        options={[
+                          { value: 5, label: '5초' },
+                          { value: 15, label: '15초' },
+                          { value: 30, label: '30초' },
+                        ]}
+                        accent="emerald"
+                        className="w-full"
+                      />
                     </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-slate-300 uppercase">미리듣기 재생 시간</label>
-                      <div className="mt-2 flex gap-2">
-                        {[5, 15, 30].map(s => (
-                          <button
-                            key={s}
-                            disabled={!isHost || busy}
-                            onClick={() => act(() => configure({ snippetSeconds: s }))}
-                            className={`flex-1 rounded-xl border px-2 py-2 text-xs font-bold transition-all ${
-                              state.settings.snippetSeconds === s
-                                ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300'
-                                : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            {s}초
-                          </button>
-                        ))}
+                    {/* Total Rounds */}
+                    <div className="apple-glass-row sm:col-span-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">🏆</span>
+                        <div>
+                          <span className="text-[13.5px] font-bold text-slate-200">총 라운드 수</span>
+                          <p className="text-xs text-slate-400">전체 게임 진행 문제 수</p>
+                        </div>
                       </div>
+                      <LiquidSegmentGroup
+                        value={state.settings.rounds}
+                        onChange={r => configure({ rounds: r })}
+                        disabled={!isHost}
+                        options={[
+                          { value: 10, label: '10곡' },
+                          { value: 20, label: '20곡' },
+                          { value: 30, label: '30곡' },
+                          { value: 50, label: '50곡' },
+                          { value: 100, label: '100곡' },
+                        ]}
+                        accent="emerald"
+                        className="w-full"
+                      />
                     </div>
                   </>
                 )}
 
+                {/* Timeline Mode Options */}
                 {state.settings.mode === 'timeline' && (
                   <>
-                    <div className="sm:col-span-2 rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4 space-y-3">
+                    <div className="apple-glass-row sm:col-span-2 space-y-3">
                       <div className="flex items-center justify-between">
-                        <label htmlFor="timeline-target-cards" className="text-xs font-semibold text-slate-300 uppercase">
-                          🃏 타임라인 승리 목표 카드 수
-                        </label>
-                        <span className="rounded-xl bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 font-mono text-sm font-black text-emerald-300">
-                          {timelineTargetCards}장
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">🃏</span>
+                          <div>
+                            <span className="text-[13.5px] font-bold text-slate-200">타임라인 승리 목표 카드 수</span>
+                            <p className="text-xs text-slate-400">먼저 목표를 달성한 플레이어가 승리</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-400">
+                          (8 ~ 20장)
                         </span>
                       </div>
-                      <input
-                        id="timeline-target-cards"
-                        type="range"
-                        min={8}
-                        max={20}
-                        step={1}
-                        disabled={!isHost}
-                        value={timelineTargetCards}
-                        onChange={e => {
-                          const nextVal = Number(e.target.value);
-                          setTimelineTargetCards(nextVal);
-                          if (isHost) {
-                            configure({ targetCards: nextVal });
-                          }
-                        }}
-                        className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-700 accent-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                        <span>최소 8장</span>
-                        <span>기본 10장</span>
-                        <span>15장</span>
-                        <span>최대 20장</span>
+                      <div className="relative pt-1 pb-1">
+                        <input
+                          id="timeline-target-cards"
+                          type="range"
+                          min={8}
+                          max={20}
+                          step={1}
+                          disabled={!isHost}
+                          value={timelineTargetCards}
+                          onChange={e => {
+                            const nextVal = Number(e.target.value);
+                            setTimelineTargetCards(nextVal);
+                            if (isHost) {
+                              configure({ targetCards: nextVal });
+                            }
+                          }}
+                          className="w-full cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        {/* Live value badge moving directly below the slider thumb */}
+                        <div className="relative w-full h-8 pt-1 select-none pointer-events-none">
+                          <div
+                            className="absolute -translate-x-1/2 flex flex-col items-center transition-all duration-75"
+                            style={{
+                              left: `calc(${((timelineTargetCards - 8) / (20 - 8)) * 100}% + ${(0.5 - ((timelineTargetCards - 8) / (20 - 8))) * 18}px)`,
+                            }}
+                          >
+                            <div className="w-2 h-2 rotate-45 bg-emerald-500/90 -mb-1 shadow-sm" />
+                            <span className="rounded-full bg-emerald-400 dark:bg-emerald-500/90 backdrop-blur-md px-3 py-0.5 font-mono text-xs font-bold text-emerald-950 dark:text-white shadow-lg border border-emerald-500/40 dark:border-white/20 whitespace-nowrap">
+                              {timelineTargetCards}장
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="sm:col-span-2 rounded-2xl border border-blue-400/20 bg-blue-400/5 p-4 text-xs leading-5 text-blue-300">
-                      💡 <strong>타임라인 모드 규칙</strong>: 플레이어는 시작 카드 2장(발매연도 공개)으로 시작합니다. 매 턴 노래를 듣고 내 타임라인 카드 사이의 올바른 연대순 슬롯을 선택해 먼저 <strong>{timelineTargetCards}장</strong>을 채우는 사람이 승리합니다!
+                    <div className="sm:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/20 bg-sky-100/70 dark:bg-sky-400/5 p-4 text-xs leading-relaxed text-sky-900 dark:text-sky-200/90 backdrop-blur-sm shadow-sm">
+                      💡 <strong className="font-black text-sky-950 dark:text-white">타임라인 모드 규칙</strong>: 플레이어는 시작 카드 2장(발매연도 공개)으로 시작합니다. 매 턴 노래를 듣고 내 타임라인 카드 사이의 올바른 연대순 슬롯을 선택해 먼저 <strong className="font-black text-sky-950 dark:text-white">{timelineTargetCards}장</strong>을 채우는 사람이 승리합니다!
                     </div>
                   </>
                 )}
 
                 {/* Personal Volume Setting */}
-                <div className="sm:col-span-2 pt-2 border-t border-slate-700/40">
+                <div className="sm:col-span-2 pt-1 border-t border-white/10">
                   <VolumeControl variant="inline" />
                 </div>
               </div>
 
-              {/* Player Roster */}
-              <div>
-                <h4 className="text-xs font-semibold text-slate-300 uppercase mb-3">참가자 목록</h4>
-                <ul className="grid gap-2 sm:grid-cols-2">
+              {/* Player Roster - Living Liquid Glass Cards */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">👥</span>
+                    <h4 className="text-[13px] font-bold text-slate-300 uppercase tracking-wider">참가자 목록</h4>
+                  </div>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {state.players.filter(p => p.connected).length}명 접속 중
+                  </span>
+                </div>
+                <ul className="grid gap-2.5 sm:grid-cols-2">
                   {state.players.map(player => (
                     <li
                       key={player.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-700/50 bg-slate-800/50 px-4 py-3"
+                      className="apple-glass-player-card"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="player-avatar relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white/15 to-white/5 border border-white/20 text-xs font-bold text-white shadow-inner">
                           {player.name.slice(0, 1)}
-                        </div>
-                        <span className="text-sm font-medium">
-                          {player.name}
-                          {player.id === me && <span className="ml-1 text-xs text-emerald-400">(나)</span>}
                           {player.id === state.hostId && (
-                            <span className="ml-1.5 rounded-md bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
-                              호스트
+                            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-[9px] text-amber-950 font-black shadow-sm" title="방장">
+                              ★
                             </span>
                           )}
-                        </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="player-name truncate text-[13.5px] font-bold text-slate-100">
+                              {player.name}
+                            </span>
+                            {player.id === me && (
+                              <span className="shrink-0 text-xs font-bold text-emerald-400">(나)</span>
+                            )}
+                          </div>
+                          <span className="player-role text-xs text-slate-400">
+                            {player.id === state.hostId ? '방장 (호스트)' : '참가자'}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <div className="shrink-0 pl-2">
                         {player.connected ? (
-                          <span className="flex items-center gap-1.5 text-emerald-400">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> 준비 완료
+                          <span className="player-status-ready inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/25 text-xs font-semibold text-emerald-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
+                            준비 완료
                           </span>
                         ) : (
-                          <span className="text-amber-400">재접속 대기</span>
+                          <span className="player-status-waiting inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/25 text-xs font-semibold text-amber-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            재접속 대기
+                          </span>
                         )}
-                      </span>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -607,6 +699,8 @@ export default function Home() {
               {/* Start Game Action */}
               {isHost ? (
                 <button
+                  type="button"
+                  data-liquid-surface
                   onClick={() =>
                     act(async () => {
                       if (state.settings.musicSource === 'spotify_playlist') {
@@ -623,17 +717,21 @@ export default function Home() {
                     })
                   }
                   disabled={busy || state.players.filter(p => p.connected).length < 1}
-                  className="liquid-btn-primary w-full py-4 text-base font-black disabled:opacity-40"
+                  className="liquid-btn-primary w-full py-4 text-base font-black disabled:opacity-40 shadow-lg cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {state.players.filter(p => p.connected).length < 1
-                    ? '플레이어가 연결되어 있지 않습니다'
-                    : state.players.filter(p => p.connected).length === 1
-                    ? '🎮 1인 솔로 모드로 게임 시작하기'
-                    : `🎮 게임 시작하기 (${state.players.filter(p => p.connected).length}명)`}
+                  <span>🎮</span>
+                  <span>
+                    {state.players.filter(p => p.connected).length < 1
+                      ? '플레이어가 연결되어 있지 않습니다'
+                      : state.players.filter(p => p.connected).length === 1
+                      ? '1인 솔로 모드로 게임 시작하기'
+                      : `게임 시작하기 (${state.players.filter(p => p.connected).length}명)`}
+                  </span>
                 </button>
               ) : (
-                <div className="rounded-2xl border border-slate-700/40 bg-slate-800/20 p-4 text-center text-xs text-slate-400">
-                  호스트가 게임을 시작할 때까지 잠시만 기다려주세요.
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-4 text-center text-xs text-slate-300 flex items-center justify-center gap-2 shadow-inner">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>호스트가 게임을 시작할 때까지 잠시만 기다려주세요…</span>
                 </div>
               )}
             </section>

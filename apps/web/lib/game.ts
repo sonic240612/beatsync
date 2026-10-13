@@ -3,7 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 import { create } from 'zustand';
 
 export type Player = { id: string; name: string; connected: boolean };
-export type MusicSource = 'kpop_hits' | 'kpop_retro' | 'kpop_all' | 'pop_hits' | 'pop_all' | 'jpop_all' | 'spotify_playlist' | 'spotify_random';
+export type MusicSource = 'kpop_hits' | 'kpop_retro' | 'kpop_all' | 'pop_hits' | 'jpop_hits' | 'pop_all' | 'jpop_all' | 'spotify_playlist' | 'spotify_random';
 
 export type Settings = {
   mode: 'speed' | 'timeline';
@@ -197,6 +197,7 @@ export const useGame = create<Store>((set, get) => ({
         const saved = localStorage.getItem(THEME_KEY);
         const initial = saved === 'light' || saved === 'dark' ? saved : 'dark';
         document.body.dataset.mode = initial;
+        document.body.dataset.theme = 'liquid-glass';
         set({ mode: initial });
 
         const savedVol = localStorage.getItem(VOLUME_KEY);
@@ -368,6 +369,7 @@ export const useGame = create<Store>((set, get) => ({
   configure: async settings => {
     const current = get().state?.settings;
     if (!current) return false;
+    set(prev => (prev.state ? { ...prev, state: { ...prev.state, settings: { ...prev.state.settings, ...settings } } } : prev));
     const result = await get().request('room:configure', { ...current, ...settings });
     return !!result?.ok;
   },

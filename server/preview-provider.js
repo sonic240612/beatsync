@@ -25,7 +25,7 @@ export function createTrackProvider(baseUrl, options = {}) {
         },
         jpop_all: {
           genreKey: 'jpop',
-          categories: ['jpop_all'],
+          categories: ['jpop_hits', 'jpop_all'],
         },
       };
 

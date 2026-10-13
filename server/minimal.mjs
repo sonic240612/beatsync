@@ -133,13 +133,13 @@ io.on('connection', (socket) => {
     const { mode, target, rounds, targetCards, snippetSeconds, musicSource, playlistUrl, spotifyUserToken, preferredGenres } = data || {};
     if (mode && !['speed', 'timeline'].includes(mode)) throw Error('게임 모드를 확인해주세요.');
     if (target && !['title', 'artist', 'both'].includes(target)) throw Error('정답 유형을 확인해주세요.');
-    if (rounds && ![10, 20, 30].includes(rounds)) throw Error('라운드 수는 10, 20, 30 중 하나입니다.');
+    if (rounds && ![10, 20, 30, 50, 100].includes(rounds)) throw Error('라운드 수는 10, 20, 30, 50, 100 중 하나입니다.');
     if (targetCards !== undefined) {
       const tc = Number(targetCards);
       if (!Number.isInteger(tc) || tc < 8 || tc > 20) throw Error('타임라인 승리 목표 카드 수는 8~20장 사이여야 합니다.');
     }
     if (snippetSeconds && ![5, 15, 30].includes(snippetSeconds)) throw Error('재생 시간은 5, 15, 30초 중 하나입니다.');
-    const validSources = ['kpop_hits', 'kpop_retro', 'kpop_all', 'pop_hits', 'pop_all', 'jpop_all', 'spotify_random', 'spotify_playlist'];
+    const validSources = ['kpop_hits', 'kpop_retro', 'kpop_all', 'pop_hits', 'jpop_hits', 'pop_all', 'jpop_all', 'spotify_random', 'spotify_playlist'];
     if (musicSource && !validSources.includes(musicSource)) throw Error('음악 소스를 확인해주세요.');
 
     if (playlistUrl !== undefined) {

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '@/lib/game';
+import { LiquidSegmentGroup } from './liquid-segment-group';
 
 interface VolumeControlProps {
   variant?: 'popover' | 'inline';
@@ -67,17 +68,17 @@ export function VolumeControl({
   };
 
   const PRESETS = [
-    { label: '음소거', val: 0 },
-    { label: '5% (기본)', val: 0.05 },
-    { label: '10%', val: 0.1 },
-    { label: '20%', val: 0.2 },
-    { label: '50%', val: 0.5 },
-    { label: '80%', val: 0.8 },
+    { label: '음소거', val: 0, title: '음소거 (0%)' },
+    { label: '5%', val: 0.05, title: '기본 권장 음량 (5%)' },
+    { label: '10%', val: 0.1, title: '10%' },
+    { label: '20%', val: 0.2, title: '20%' },
+    { label: '50%', val: 0.5, title: '50%' },
+    { label: '80%', val: 0.8, title: '80%' },
   ];
 
   if (variant === 'inline') {
     return (
-      <div className={`space-y-3 ${className}`}>
+      <div className={`space-y-3.5 ${className}`}>
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-slate-300 uppercase flex items-center gap-2">
             <span>🔊 노래 재생 음량</span>
@@ -89,9 +90,10 @@ export function VolumeControl({
         <div className="flex items-center gap-3">
           <button
             type="button"
+            data-liquid-surface
             onClick={toggleMute}
             aria-label={volume === 0 ? '음소거 해제' : '음소거'}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white hover:border-emerald-400/40 transition-colors shrink-0"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 hover:text-white hover:border-emerald-400/40 transition-colors shrink-0 shadow-sm"
           >
             {renderIcon()}
           </button>
@@ -103,7 +105,7 @@ export function VolumeControl({
               max={100}
               value={percent}
               onChange={e => setVolume(Number(e.target.value) / 100)}
-              className="w-full h-2 rounded-lg bg-slate-700/60 accent-emerald-400 cursor-pointer"
+              className="w-full h-2 rounded-lg bg-white/10 accent-emerald-400 cursor-pointer shadow-inner"
             />
           </div>
 
@@ -113,22 +115,19 @@ export function VolumeControl({
         </div>
 
         {showPresets && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {PRESETS.map(p => (
-              <button
-                key={p.val}
-                type="button"
-                onClick={() => setVolume(p.val)}
-                className={`rounded-xl px-2.5 py-1 text-[11px] font-mono font-medium transition-all ${
-                  percent === Math.round(p.val * 100)
-                    ? 'border border-emerald-400 bg-emerald-400/20 text-emerald-300 font-bold shadow-sm'
-                    : 'border border-slate-700/60 bg-slate-800/40 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+          <LiquidSegmentGroup
+            value={PRESETS.find(p => Math.round(p.val * 100) === percent)?.val ?? -1}
+            onChange={val => {
+              if (val >= 0) setVolume(val);
+            }}
+            options={PRESETS.map(p => ({
+              value: p.val,
+              label: p.label,
+              title: p.title,
+            }))}
+            accent="emerald"
+            className="w-full volume-presets-control"
+          />
         )}
       </div>
     );
@@ -169,11 +168,11 @@ export function VolumeControl({
           >
             <div
               data-liquid-surface
-              className="liquid-glass-card max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 relative border border-slate-700/60"
+              className="liquid-glass-card max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 relative"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-700/40 pb-3">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 shrink-0">
                     {renderIcon()}
@@ -186,7 +185,7 @@ export function VolumeControl({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors text-sm font-bold"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-sm font-bold"
                   aria-label="닫기"
                 >
                   ✕
@@ -205,7 +204,7 @@ export function VolumeControl({
                     type="button"
                     onClick={toggleMute}
                     title={volume === 0 ? '음소거 해제' : '음소거'}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white hover:border-emerald-400/40 transition-colors shrink-0"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 hover:text-white hover:border-emerald-400/40 transition-colors shrink-0 shadow-sm"
                   >
                     {renderIcon()}
                   </button>
@@ -216,41 +215,35 @@ export function VolumeControl({
                     max={100}
                     value={percent}
                     onChange={e => setVolume(Number(e.target.value) / 100)}
-                    className="w-full h-2 rounded-lg bg-slate-700/60 accent-emerald-400 cursor-pointer"
+                    className="w-full h-2 rounded-lg bg-white/10 accent-emerald-400 cursor-pointer shadow-inner"
                   />
                 </div>
               </div>
 
               {/* Preset Buttons */}
               {showPresets && (
-                <div className="space-y-1.5 pt-2 border-t border-slate-700/30">
+                <div className="space-y-1.5 pt-3 border-t border-white/10">
                   <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
                     빠른 음량 프리셋
                   </span>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {PRESETS.map(p => {
-                      const isSelected = percent === Math.round(p.val * 100);
-                      return (
-                        <button
-                          key={p.val}
-                          type="button"
-                          onClick={() => setVolume(p.val)}
-                          className={`rounded-xl py-2 px-1 text-center text-xs font-mono transition-all ${
-                            isSelected
-                              ? 'border border-emerald-400 bg-emerald-400/25 text-emerald-300 font-bold shadow-sm'
-                              : 'border border-slate-700/60 bg-slate-800/30 text-slate-300 hover:text-white hover:border-slate-600'
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <LiquidSegmentGroup
+                    value={PRESETS.find(p => Math.round(p.val * 100) === percent)?.val ?? -1}
+                    onChange={val => {
+                      if (val >= 0) setVolume(val);
+                    }}
+                    options={PRESETS.map(p => ({
+                      value: p.val,
+                      label: p.label,
+                      title: p.title,
+                    }))}
+                    accent="emerald"
+                    className="w-full volume-presets-control"
+                  />
                 </div>
               )}
 
               {/* Footer */}
-              <div className="pt-2 border-t border-slate-700/30 flex items-center justify-between">
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                 <p className="text-[11px] text-slate-400">
                   기본값은 5%이며 브라우저에 저장됩니다.
                 </p>

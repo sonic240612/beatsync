@@ -89,7 +89,7 @@ export default function TimelineMode() {
           setIsPlaying(false);
         });
     }
-  }, [state?.preview?.url, activeReveal, round, volume]);
+  }, [state?.preview?.url, activeReveal, round]);
 
   const handleManualPlay = () => {
     const el = audio.current;
@@ -399,7 +399,7 @@ export default function TimelineMode() {
 
       {/* Audio Autoplay Block Notice */}
       {audioBlocked && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-5 py-3 text-xs text-emerald-200 backdrop-blur-md">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-5 py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-base">🔊</span>
             <span>브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
@@ -459,7 +459,7 @@ export default function TimelineMode() {
                 : 'border-emerald-400 bg-emerald-400/15 hover:border-emerald-300 hover:bg-emerald-400/20 shadow-emerald-500/10'
             }`}
           >
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-xs font-bold text-emerald-300 mb-2">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 border border-emerald-400/40 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-2">
               <span className="animate-spin text-sm">💿</span>
               <span>🖐️ 이번 라운드 출제 곡 카드</span>
             </div>
@@ -470,10 +470,10 @@ export default function TimelineMode() {
               </div>
             </div>
 
-            <h4 className="text-base font-black text-white">음악을 듣고 발매연도를 유추하세요!</h4>
-            <p className="font-mono text-lg sm:text-xl font-black text-emerald-300 mt-1">발매연도: ????년</p>
+            <h4 className="text-base font-black text-slate-900 dark:text-white">음악을 듣고 발매연도를 유추하세요!</h4>
+            <p className="font-mono text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1">발매연도: ????년</p>
 
-            <div className="mt-3 pt-2.5 border-t border-emerald-400/20 text-[11px] text-emerald-200/90 flex items-center justify-center gap-1.5">
+            <div className="mt-3 pt-2.5 border-t border-emerald-400/20 text-[11px] text-emerald-800 dark:text-emerald-200/90 flex items-center justify-center gap-1.5">
               <span>👉 이 카드를 잡아 아래 타임라인의 올바른 슬롯으로 <strong>드래그 & 드롭</strong>하세요!</span>
             </div>
           </div>

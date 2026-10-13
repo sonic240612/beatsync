@@ -881,7 +881,7 @@ export const tracks = [
     title: 'アイドル',
     artist: 'YOASOBI',
     year: 2023,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['아이돌', 'idol'], artist: ['요아소비'] },
   },
   {
@@ -889,7 +889,7 @@ export const tracks = [
     title: '夜に駆ける',
     artist: 'YOASOBI',
     year: 2019,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['요루니 카케루', '밤을 달리다', 'into the night'], artist: ['요아소비'] },
   },
   {
@@ -897,7 +897,7 @@ export const tracks = [
     title: '群青',
     artist: 'YOASOBI',
     year: 2020,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['군청', '군조', 'gunjo'], artist: ['요아소비'] },
   },
   {
@@ -905,7 +905,7 @@ export const tracks = [
     title: 'Lemon',
     artist: '米津玄師',
     year: 2018,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['레몬'], artist: ['요네즈 켄시', '켄시', 'kenshi yonezu'] },
   },
   {
@@ -913,7 +913,7 @@ export const tracks = [
     title: 'KICK BACK',
     artist: '米津玄師',
     year: 2022,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['킥백', '킥 백'], artist: ['요네즈 켄시', '켄시', 'kenshi yonezu'] },
   },
   {
@@ -921,7 +921,7 @@ export const tracks = [
     title: 'IRIS OUT',
     artist: '米津玄師',
     year: 2025,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['아이리스 아웃', '아이리스아웃'], artist: ['요네즈 켄시', '켄시', 'kenshi yonezu'] },
   },
   {
@@ -929,7 +929,7 @@ export const tracks = [
     title: 'Pretender',
     artist: 'Official髭男dism',
     year: 2019,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['프리텐더'], artist: ['오피셜 히게단디즘', '히게단'] },
   },
   {
@@ -937,7 +937,7 @@ export const tracks = [
     title: 'Subtitle',
     artist: 'Official髭男dism',
     year: 2022,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['서브타이틀'], artist: ['오피셜 히게단디즘', '히게단'] },
   },
   {
@@ -945,7 +945,7 @@ export const tracks = [
     title: 'ライラック',
     artist: 'Mrs. GREEN APPLE',
     year: 2024,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['라일락', 'lilac'], artist: ['미세스 그린 애플', '미세스'] },
   },
   {
@@ -953,7 +953,7 @@ export const tracks = [
     title: 'インフェルノ',
     artist: 'Mrs. GREEN APPLE',
     year: 2019,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['인페르노', 'inferno'], artist: ['미세스 그린 애플', '미세스'] },
   },
   {
@@ -961,7 +961,7 @@ export const tracks = [
     title: '青と夏',
     artist: 'Mrs. GREEN APPLE',
     year: 2018,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['푸름과 여름', '아오토 나츠', 'ao to natsu'], artist: ['미세스 그린 애플', '미세스'] },
   },
   {
@@ -969,7 +969,7 @@ export const tracks = [
     title: '怪獣の花唄',
     artist: 'Vaundy',
     year: 2020,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['괴수의 꽃노래', '카이쥬노 하나우타'], artist: ['바운디'] },
   },
   {
@@ -977,7 +977,7 @@ export const tracks = [
     title: '踊り子',
     artist: 'Vaundy',
     year: 2021,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['무희', '오도리코', 'odoriko'], artist: ['바운디'] },
   },
   {
@@ -985,7 +985,7 @@ export const tracks = [
     title: '白日',
     artist: 'King Gnu',
     year: 2019,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['백일', '하쿠지츠', 'hakujitsu'], artist: ['킹 누', '킹누'] },
   },
   {
@@ -993,7 +993,7 @@ export const tracks = [
     title: 'SPECIALZ',
     artist: 'King Gnu',
     year: 2023,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['스페셜즈'], artist: ['킹 누', '킹누'] },
   },
   {
@@ -1001,7 +1001,7 @@ export const tracks = [
     title: 'マリーゴールド',
     artist: 'あいみょん',
     year: 2018,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['마리골드', 'marigold'], artist: ['아이묭', 'aimyon'] },
   },
   {
@@ -1009,7 +1009,7 @@ export const tracks = [
     title: 'ベテルギウス',
     artist: '優里',
     year: 2021,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['베텔기우스', 'betelgeuse'], artist: ['유우리', '유리', 'yuuri'] },
   },
   {
@@ -1017,7 +1017,7 @@ export const tracks = [
     title: 'ドライフラワー',
     artist: '優里',
     year: 2020,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['드라이 플라워', '드라이플라워', 'dry flower'], artist: ['유우리', '유리', 'yuuri'] },
   },
   {
@@ -1025,7 +1025,7 @@ export const tracks = [
     title: 'うっせぇわ',
     artist: 'Ado',
     year: 2020,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['웃세와', '시끄러워', 'usseewa'], artist: ['아도'] },
   },
   {
@@ -1033,7 +1033,7 @@ export const tracks = [
     title: '唱',
     artist: 'Ado',
     year: 2023,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['창', '쇼', 'show'], artist: ['아도'] },
   },
   {
@@ -1041,7 +1041,7 @@ export const tracks = [
     title: 'Bling-Bang-Bang-Born',
     artist: 'Creepy Nuts',
     year: 2024,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['블링뱅뱅본', '블링 뱅 뱅 본'], artist: ['크리피 너츠', '크리피너츠'] },
   },
   {
@@ -1049,7 +1049,7 @@ export const tracks = [
     title: '死ぬのがいいわ',
     artist: '藤井風',
     year: 2020,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['시누노가 이이와', '죽는 게 나아', 'shinunoga e-wa'], artist: ['후지이 카제', '카제', 'fujii kaze'] },
   },
   {
@@ -1057,7 +1057,7 @@ export const tracks = [
     title: '晩餐歌',
     artist: 'tuki.',
     year: 2023,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['만찬가', '반산카', 'bansanka'], artist: ['츠키', '투키'] },
   },
   {
@@ -1065,7 +1065,7 @@ export const tracks = [
     title: '紅蓮華',
     artist: 'LiSA',
     year: 2019,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['홍련화', '구렌게', 'gurenge'], artist: ['리사'] },
   },
   {
@@ -1073,7 +1073,7 @@ export const tracks = [
     title: '前前前世',
     artist: 'RADWIMPS',
     year: 2016,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['전전전세', '젠젠젠세', 'zenzenzense'], artist: ['래드윔프스', '라드윔프스'] },
   },
   {
@@ -1081,7 +1081,7 @@ export const tracks = [
     title: 'ただ君に晴れ',
     artist: 'ヨルシカ',
     year: 2018,
-    category: 'jpop_all',
+    category: 'jpop_hits',
     aliases: { title: ['그저 네게 맑아라', '타다 키미니 하레', 'tada kimi ni hare'], artist: ['요루시카'] },
   },
 ];
@@ -1093,6 +1093,7 @@ export const MUSIC_CATEGORIES = [
   { id: 'kpop_hits', label: '🔥 K-Pop 메가 히트곡', desc: '뉴진스, 아이유, BTS, 블랙핑크, 에스파 등 인기곡' },
   { id: 'kpop_retro', label: '📼 90~2000년대 추억 가요', desc: '서태지, 쿨, god, 이적, 버즈 등 세대를 초월한 불후의 명곡' },
   { id: 'pop_hits', label: '🌐 글로벌 팝송 TOP', desc: 'The Weeknd, Taylor Swift, Maroon 5, Queen 등 전 세계 차트 1위곡' },
+  { id: 'jpop_hits', label: '🇯🇵 J-Pop 히트곡', desc: 'YOASOBI, 요네즈 켄시, 히게단, 아이묭 등 인기곡' },
   { id: 'spotify_random', label: '🎲 Spotify 완전 랜덤 셔플', desc: '장르와 시대를 초월해 전 세계 명곡을 무작위로 섞은 익스트림 퀴즈' },
   { id: 'spotify_playlist', label: '🔗 Spotify 플레이리스트 직접 입력', desc: '원하는 Spotify 공개 플레이리스트 URL/ID를 넣어 맞춤 퀴즈' },
 ];

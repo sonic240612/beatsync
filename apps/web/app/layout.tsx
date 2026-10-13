@@ -14,7 +14,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
       </head>
-      <body data-theme="liquid-glass" data-mode="dark" className="antialiased" suppressHydrationWarning>
+      <body data-theme="liquid-glass" data-mode="dark" data-liquid-motion="full" className="antialiased" suppressHydrationWarning>
         <GlassEffectProvider />
         <script
           dangerouslySetInnerHTML={{
@@ -25,12 +25,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
                   var mode = (saved === 'light' || saved === 'dark') ? saved : (prefersDark ? 'dark' : 'light');
                   document.body.dataset.mode = mode;
+                  document.body.dataset.theme = 'liquid-glass';
+                  document.body.dataset.liquidMotion = 'full';
                 } catch(e) {}
               })();
             `,
           }}
         />
-        {/* Ambient Liquid Glass Scene */}
+        {/* Ambient Liquid Scene (Original gradient mesh + particles) */}
         <div className="liquid-scene" aria-hidden="true">
           <div className="liquid-scene-gradient" />
           <div className="liquid-particles">

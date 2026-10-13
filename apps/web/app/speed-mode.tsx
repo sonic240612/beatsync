@@ -110,7 +110,7 @@ export default function SpeedMode() {
           setIsPlaying(false);
         });
     }
-  }, [state?.preview?.url, activeReveal, round, volume]);
+  }, [state?.preview?.url, activeReveal, round]);
 
   const handleManualPlay = () => {
     const el = audio.current;
@@ -294,7 +294,7 @@ export default function SpeedMode() {
 
       {/* Audio Autoplay Block Notice */}
       {audioBlocked && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-5 py-3 text-xs text-emerald-200 backdrop-blur-md">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-5 py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-base">🔊</span>
             <span>브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
