@@ -13,5 +13,8 @@ apps/web/public/demo/*.wav
 nul
 .pi/
 *.log
+beatsync_prd.md
+docs/
+
 
 
