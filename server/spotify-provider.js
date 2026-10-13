@@ -6,6 +6,7 @@
  */
 
 import { tracks as catalogTracks } from '../shared/tracks.js';
+import { JAPANESE_DICTIONARY, kanaToRomajiAndKorean, matchesRomanizedName } from './japanese-translit.js';
 
 const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1';
@@ -14,6 +15,7 @@ let cachedSpotifyToken = null;
 let tokenExpiresAt = 0;
 let uaCounter = Math.floor(Math.random() * 10000);
 const previewCache = new Map();
+let itunesCooldownUntil = 0;
 const spotifyTrackMetaCache = new Map();
 const playlistEmbedCache = new Map();
 
@@ -251,7 +253,7 @@ export function isKaraokeOrUnwantedTrack(title, artist = '', album = '') {
   return false;
 }
 
-export function isArtistMatching(expectedArtist, candidateArtist) {
+export function isArtistMatching(expectedArtist, candidateArtist, extraAliases = []) {
   if (!expectedArtist || !candidateArtist) return false;
   const normExp = normalizeForMatch(expectedArtist);
   const normCand = normalizeForMatch(candidateArtist);
@@ -314,11 +316,97 @@ export function isArtistMatching(expectedArtist, candidateArtist) {
     '버즈': ['buzz'],
     'sg wannabe': ['sg워너비'],
     'sg워너비': ['sg wannabe'],
+    '이무진': ['lee mujin', 'lee mu jin'],
+    'lee mujin': ['이무진'],
+    '볼빨간사춘기': ['bol4', 'bolbbalgan4', 'bolbbalgan sachungi', 'bolbbalgan'],
+    'bol4': ['볼빨간사춘기', '볼사'],
+    'official髭男dism': ['official hige dandism', 'official higedandism', 'hige dandism', 'higedan', '오피셜 히게단디즘', '오피셜히게단디즘', '히게단'],
+    'official hige dandism': ['official髭男dism', '오피셜 히게단디즘', '오피셜히게단디즘', '히게단'],
+    '中島美嘉': ['mika nakashima', 'nakashima mika', '나카시마 미카', '나카지마 미카'],
+    'mika nakashima': ['中島美嘉', '나카시마 미카'],
+    '菅田将暉': ['masaki suda', 'suda masaki', '스다 마사키'],
+    'masaki suda': ['菅田将暉', '스다 마사키'],
+    '藤井風': ['fujii kaze', 'kaze fujii', '후지이 카제', '후지이 가제'],
+    '藤井 風': ['fujii kaze', 'kaze fujii', '후지이 카제'],
+    'fujii kaze': ['藤井風', '藤井 風', '후지이 카제'],
+    '10cm': ['십센치'],
+    '십센치': ['10cm'],
+    '잔나비': ['jannabi'],
+    'jannabi': ['잔나비'],
+    '폴킴': ['paul kim'],
+    'paul kim': ['폴킴'],
+    '헤이즈': ['heize'],
+    'heize': ['헤이즈'],
+    '크러쉬': ['crush'],
+    'crush': ['크러쉬'],
+    '자이언티': ['zion.t', 'zion t'],
+    'zion.t': ['자이언티'],
+    '로이킴': ['roy kim'],
+    'roy kim': ['로이킴'],
+    '백예린': ['yerin baek', 'baek yerin'],
+    'yerin baek': ['백예린'],
+    '이하이': ['lee hi'],
+    'lee hi': ['이하이'],
+    '선미': ['sunmi'],
+    'sunmi': ['선미'],
+    '청하': ['chung ha', 'chungha'],
+    'chung ha': ['청하'],
+    '화사': ['hwa sa', 'hwasa'],
+    'hwa sa': ['화사'],
+    '지코': ['zico'],
+    'zico': ['지코'],
+    '비오': ['be o', "be'o"],
+    "be'o": ['비오'],
+    '비비': ['bibi'],
+    'bibi': ['비비'],
+    '적재': ['jukjae'],
+    '카더가든': ['car the garden', 'carthegarden'],
+    '검정치마': ['the black skirts', 'black skirts'],
+    '실리카겔': ['silica gel'],
+    '새소년': ['se so neon', 'sesoneon'],
+    '혁오': ['hyukoh'],
+    '국카스텐': ['guckkasten'],
+    '넬': ['nell'],
+    '자우림': ['jaurim'],
+    '에픽하이': ['epik high'],
+    '다비치': ['davichi'],
+    '멜로망스': ['melomance'],
+    '어반자카파': ['urban zakapa'],
   };
+
   for (const [k, vList] of Object.entries(aliasMap)) {
-    if (normExp.includes(k) && vList.some(v => normCand.includes(v))) return true;
-    if (normCand.includes(k) && vList.some(v => normExp.includes(v))) return true;
+    const nk = normalizeForMatch(k);
+    if (normExp.includes(nk) || nk.includes(normExp)) {
+      if (vList.some(v => normCand.includes(normalizeForMatch(v)) || normalizeForMatch(v).includes(normCand))) return true;
+    }
+    if (normCand.includes(nk) || nk.includes(normCand)) {
+      if (vList.some(v => normExp.includes(normalizeForMatch(v)) || normalizeForMatch(v).includes(normExp))) return true;
+    }
   }
+
+  // Japanese dictionary check
+  const dictExp = JAPANESE_DICTIONARY[expectedArtist] || [];
+  for (const da of dictExp) {
+    const nda = normalizeForMatch(da);
+    if (nda && (nda === normCand || normCand.includes(nda) || nda.includes(normCand))) return true;
+  }
+  const dictCand = JAPANESE_DICTIONARY[candidateArtist] || [];
+  for (const da of dictCand) {
+    const nda = normalizeForMatch(da);
+    if (nda && (nda === normExp || normExp.includes(nda) || nda.includes(normExp))) return true;
+  }
+
+  // Extra aliases check
+  if (Array.isArray(extraAliases)) {
+    for (const a of extraAliases) {
+      const normA = normalizeForMatch(a);
+      if (normA && (normA === normCand || normCand.includes(normA) || normA.includes(normCand))) return true;
+    }
+  }
+
+  // Romanized phonetic matching (e.g. "이무진" <-> "LEE Mujin")
+  if (matchesRomanizedName(expectedArtist, candidateArtist, { isArtist: true })) return true;
+  if (matchesRomanizedName(candidateArtist, expectedArtist, { isArtist: true })) return true;
 
   return false;
 }
@@ -342,7 +430,8 @@ const KNOWN_TITLE_TRANSLATIONS = {
   '체념': ['resignation'],
   '벌써 일년': ['already one year'],
   '점점': ['gradually'],
-  '눈의 꽃': ['snow flower'],
+  '눈의 꽃': ['snow flower', 'yuki no hana'],
+  '雪の華': ['snow flower', 'yuki no hana', 'yukinohana', '눈의 꽃'],
   '다행이다': ['it is fortunate'],
   '취중진담': ['truth in wine'],
   '비와 당신': ['rain and you'],
@@ -357,6 +446,7 @@ const KNOWN_TITLE_TRANSLATIONS = {
   '루저': ['loser'],
   '삐딱하게': ['crooked'],
   '눈 코 입': ['eyes, nose, lips'],
+  '눈, 코, 입': ['eyes, nose, lips'],
   '봄날': ['spring day'],
   '작은 것들을 위한 시': ['boy with luv'],
   '피 땀 눈물': ['blood sweat & tears', 'blood sweat and tears'],
@@ -371,16 +461,58 @@ const KNOWN_TITLE_TRANSLATIONS = {
   '유리구슬': ['glass bead'],
   '롤린': ['rollin', "rollin'"],
   '사건의 지평선': ['event horizon'],
-  '스물다섯, 스물하나': ['twenty-five, twenty-one'],
+  '스물다섯, 스물하나': ['twenty-five, twenty-one', '25, 21'],
   '헤픈 우연': ['happen accident'],
   '너의 의미': ['meaning of you'],
   '금요일에 만나요': ['friday'],
+  '신호등': ['traffic light', 'stoplight'],
+  '나만, 봄': ['bom', 'spring', 'only me, spring'],
+  '나만 봄': ['bom', 'spring', 'only me, spring'],
+  '사요나라 엘레지': ['sayonara elegy'],
+  'さよならエレジー': ['sayonara elegy', 'sayonaraereji'],
+  'きらり': ['kirari'],
+  'Mixed Nuts': ['믹스 넛', 'mixed nuts'],
+  '믹스 넛': ['mixed nuts'],
+  '바람기억': ['memory of the wind'],
+  '가리워진 길': ['the covered up road', 'covered road'],
+  '너를 만나': ['me after you'],
+  '모든 날, 모든 순간': ['every day, every moment'],
+  '그때 헤어지면 돼': ['only then'],
+  '우리 왜 헤어져야 해': ['why should we break up'],
+  '주저하는 연인들을 위해': ['for lovers who hesitate'],
+  '뜨거운 여름밤은 가고 남은 건 볼품없지만': ['the secret of sweet summer'],
+  '사랑하긴 했었나요': ['did you ever love me'],
+  '가을밤에 든 생각': ['thought on an autumn night'],
+  '어떻게 이별까지 사랑하겠어, 널 사랑하는 거지': ['how can i love the heartbreak', "how can i love the heartbreak, you're the one i love"],
+  '어떻게 이별까지 사랑하겠어 널 사랑하는 거지': ['how can i love the heartbreak'],
+  '한 페이지가 될 수 있게': ['time of our life'],
+  '예뻤어': ['you were beautiful'],
+  '아주 NICE': ['very nice', 'aju nice'],
+  '아주 nice': ['very nice', 'aju nice'],
+  '아무노래': ['any song'],
+  '난 알아요': ['i know'],
+  '하늘을 달리다': ['running in the sky'],
+  '첫 만남은 계획대로 되지 않아': ['plot twist'],
+  '고민중독': ['t.b.h', 'tbh'],
+  '비도 오고 그래서': ['you, clouds, rain', 'you clouds rain'],
+  '퀸카': ['queencard'],
+  '퀸카 (Queencard)': ['queencard'],
+  '후라이의 꿈': ["fry's dream", 'dream of fry'],
+  '나는 아픈 건 딱 질색이니까': ['fate'],
+  '손오공': ['super'],
+  '울고 싶지 않아': ["don't wanna cry"],
+  '다시 만난 세계': ['into the new world'],
+  '으르렁': ['growl'],
+  '촛불하나': ['one candle', 'a candle'],
+  '애상': ['sorrow'],
 };
 
 export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []) {
   if (!expectedTitle || !candidateTitle) return false;
-  const normExp = normalizeForMatch(cleanTrackTitle(expectedTitle));
-  const normCand = normalizeForMatch(cleanTrackTitle(candidateTitle));
+  const cleanExp = cleanTrackTitle(expectedTitle);
+  const cleanCand = cleanTrackTitle(candidateTitle);
+  const normExp = normalizeForMatch(cleanExp);
+  const normCand = normalizeForMatch(cleanCand);
   if (!normExp || !normCand) return false;
 
   if (normExp === normCand) return true;
@@ -401,6 +533,29 @@ export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []
         return true;
       }
     }
+    if (normCand.includes(normKr) || normKr.includes(normCand)) {
+      if (enList.some(en => normExp.includes(normalizeForMatch(en)) || normalizeForMatch(en).includes(normExp))) {
+        return true;
+      }
+    }
+  }
+
+  // Japanese dictionary check
+  const dictExp = JAPANESE_DICTIONARY[cleanExp] || JAPANESE_DICTIONARY[expectedTitle] || [];
+  for (const da of dictExp) {
+    const nda = normalizeForMatch(da);
+    if (nda && (nda === normCand || normCand.includes(nda) || nda.includes(normCand))) {
+      return true;
+    }
+  }
+
+  // Kana algorithmic transliteration (e.g. "きらり" -> "kirari")
+  const kanaRes = kanaToRomajiAndKorean(cleanExp);
+  if (kanaRes.romaji) {
+    const normRoma = normalizeForMatch(kanaRes.romaji);
+    if (normRoma && (normRoma === normCand || normCand.includes(normRoma) || normRoma.includes(normCand))) {
+      return true;
+    }
   }
 
   // Check extra aliases if provided
@@ -413,10 +568,14 @@ export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []
     }
   }
 
+  // Romanized phonetic matching
+  if (matchesRomanizedName(cleanExp, cleanCand, { isArtist: false })) return true;
+  if (matchesRomanizedName(cleanCand, cleanExp, { isArtist: false })) return true;
+
   return false;
 }
 
-function selectBestCandidate(candidates, expectedTitle, expectedArtist, extraAliases = []) {
+function selectBestCandidate(candidates, expectedTitle, expectedArtist, extraTitleAliases = [], extraArtistAliases = []) {
   const valid = [];
   const cleanExpTitle = cleanTrackTitle(expectedTitle);
 
@@ -428,8 +587,8 @@ function selectBestCandidate(candidates, expectedTitle, expectedArtist, extraAli
 
     if (!previewUrl) continue;
     if (isKaraokeOrUnwantedTrack(trackName, artistName, albumName)) continue;
-    if (!isArtistMatching(expectedArtist, artistName)) continue;
-    if (!isTitleMatching(expectedTitle, trackName, extraAliases)) continue;
+    if (!isArtistMatching(expectedArtist, artistName, extraArtistAliases)) continue;
+    if (!isTitleMatching(expectedTitle, trackName, extraTitleAliases)) continue;
 
     let score = 100;
     const cleanCandTitle = cleanTrackTitle(trackName);
@@ -460,7 +619,16 @@ function selectBestCandidate(candidates, expectedTitle, expectedArtist, extraAli
  * Free, fast, reliable fallback providing audio previews, high-res album artwork, and real release years
  * Includes multi-candidate scoring and strict anti-karaoke/tribute validation
  */
-export async function resolveAudioPreview(title, artist, extraAliases = []) {
+export async function resolveAudioPreview(title, artist, optionsOrTitleAliases = [], extraArtistAliases = []) {
+  let extraTitleAliases = [];
+  let artistAliases = Array.isArray(extraArtistAliases) ? extraArtistAliases : [];
+  if (Array.isArray(optionsOrTitleAliases)) {
+    extraTitleAliases = optionsOrTitleAliases;
+  } else if (optionsOrTitleAliases && typeof optionsOrTitleAliases === 'object') {
+    extraTitleAliases = optionsOrTitleAliases.titleAliases || optionsOrTitleAliases.aliases?.title || optionsOrTitleAliases.aliases || [];
+    artistAliases = optionsOrTitleAliases.artistAliases || optionsOrTitleAliases.aliases?.artist || artistAliases;
+  }
+
   const cleanArtistInput = String(artist || '').replace(/\u00a0/g, ' ').trim();
   const cleanTitleInput = String(title || '').replace(/\u00a0/g, ' ').trim();
   const cacheKey = `${cleanArtistInput}:${cleanTitleInput}`.toLowerCase();
@@ -474,72 +642,113 @@ export async function resolveAudioPreview(title, artist, extraAliases = []) {
     .split(/[,&/×・]/)[0]
     .trim();
 
-  // 1. Try iTunes Search API
-  try {
-    const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(`${cleanTitleInput} ${cleanArtistInput}`);
-    const hasKorean = /[가-힣]/.test(`${cleanTitleInput} ${cleanArtistInput}`);
-    const countryParam = hasJapanese ? '&country=JP' : hasKorean ? '&country=KR' : '';
+  const reqHeaders = getSpotifyHeaders();
 
-    const query = encodeURIComponent(`${cleanArtistInput} ${cleanTitleInput}`);
-    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=8${countryParam}`);
-    let item = null;
-    if (res.ok) {
-      const text = await res.text();
-      if (text) {
-        try {
-          const data = JSON.parse(text);
-          item = selectBestCandidate(data.results, cleanTitleInput, cleanArtistInput, extraAliases);
-        } catch {}
+  const allArtistCandidates = [...artistAliases, ...(JAPANESE_DICTIONARY[cleanArtistInput] || [])];
+  const allTitleCandidates = [...extraTitleAliases, ...(JAPANESE_DICTIONARY[cleanTitleInput] || [])];
+
+  // 1. Try iTunes Search API with intelligent queries and realistic browser headers
+  if (Date.now() >= itunesCooldownUntil) {
+    try {
+      const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(`${cleanTitleInput} ${cleanArtistInput}`);
+      const queries = [
+        { term: `${cleanArtistInput} ${cleanTitleInput}` },
+        { term: `${firstArtist} ${cleanTitle}` },
+      ];
+
+      if (hasJapanese) {
+        queries.push({ term: `${cleanTitleInput}` });
+        queries.push({ term: `${cleanArtistInput} ${cleanTitleInput}` });
       }
-    }
 
-    // Retry with cleaned title and primary artist if initial query didn't find a match
-    if (!item) {
-      const retryRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(`${firstArtist} ${cleanTitle}`)}&entity=song&limit=8`);
-      if (retryRes.ok) {
-        const text = await retryRes.text();
-        if (text) {
-          try {
-            const retryData = JSON.parse(text);
-            item = selectBestCandidate(retryData.results, cleanTitleInput, cleanArtistInput, extraAliases);
-          } catch {}
+      // Add transliteration/alias queries if applicable (e.g. Romaji / English names)
+      const translitQueries = [];
+      for (const ea of allArtistCandidates) {
+        for (const et of allTitleCandidates) {
+          if (/^[a-zA-Z0-9\s]+$/.test(`${ea} ${et}`)) {
+            translitQueries.push({ term: `${ea} ${et}` });
+          }
         }
       }
-    }
+      if (translitQueries.length > 0) {
+        queries.push(...translitQueries.slice(0, 2));
+      }
 
-    if (item) {
-      const result = {
-        previewUrl: item.previewUrl || null,
-        artworkUrl: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : null,
-        year: item.releaseDate ? parseInt(item.releaseDate.slice(0, 4), 10) : null,
-        altTitle: item.trackName || null,
-        altArtist: item.artistName || null,
-      };
-      previewCache.set(cacheKey, result);
-      return result;
+      let item = null;
+      for (const q of queries) {
+        try {
+          const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q.term)}&entity=song&limit=8`;
+          const res = await fetch(url, { headers: reqHeaders });
+          if (res.status === 403 || res.status === 429) {
+            itunesCooldownUntil = Date.now() + 60000;
+            break;
+          }
+          if (res.ok) {
+            const text = await res.text();
+            if (text) {
+              const data = JSON.parse(text);
+              item = selectBestCandidate(data.results, cleanTitleInput, cleanArtistInput, extraTitleAliases, artistAliases);
+              if (item) break;
+            }
+          }
+        } catch {}
+      }
+
+      if (item) {
+        const result = {
+          previewUrl: item.previewUrl || null,
+          artworkUrl: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : null,
+          year: item.releaseDate ? parseInt(item.releaseDate.slice(0, 4), 10) : null,
+          altTitle: item.trackName || null,
+          altArtist: item.artistName || null,
+        };
+        previewCache.set(cacheKey, result);
+        return result;
+      }
+    } catch (err) {
+      // Proceed to Deezer fallback
     }
-  } catch (err) {
-    // Proceed to Deezer fallback
   }
 
   // 2. Fallback to Deezer Search API (strictly validated!)
   try {
-    const q = encodeURIComponent(`${firstArtist} ${cleanTitle}`);
-    const deezerRes = await fetch(`https://api.deezer.com/search?q=${q}&limit=8`);
-    if (deezerRes.ok) {
-      const deezerData = await deezerRes.json();
-      const dItem = selectBestCandidate(deezerData?.data, cleanTitleInput, cleanArtistInput, extraAliases);
-      if (dItem && (dItem.preview || dItem.album?.cover_xl || dItem.album?.cover_big)) {
-        const knownYear = lookupKnownOriginalYear(cleanTitleInput, cleanArtistInput);
-        const result = {
-          previewUrl: dItem.preview || null,
-          artworkUrl: dItem.album?.cover_xl || dItem.album?.cover_big || dItem.album?.cover_medium || null,
-          year: knownYear || null,
-          altTitle: dItem.title || null,
-          altArtist: dItem.artist?.name || null,
-        };
-        previewCache.set(cacheKey, result);
-        return result;
+    const deezerQueries = [
+      `${firstArtist} ${cleanTitle}`,
+      `${cleanArtistInput} ${cleanTitleInput}`,
+    ];
+    for (const a of artistAliases) {
+      deezerQueries.push(`${a} ${cleanTitleInput}`);
+    }
+    for (const t of extraTitleAliases) {
+      deezerQueries.push(`${firstArtist} ${t}`);
+    }
+    for (const ea of allArtistCandidates) {
+      for (const et of allTitleCandidates) {
+        if (/^[a-zA-Z0-9\s]+$/.test(`${ea} ${et}`)) {
+          deezerQueries.push(`${ea} ${et}`);
+        }
+      }
+    }
+    for (const q of deezerQueries) {
+      const dUrl = `https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=10`;
+      const deezerRes = await fetch(dUrl, {
+        headers: { 'User-Agent': reqHeaders['User-Agent'] || 'Mozilla/5.0' },
+      });
+      if (deezerRes.ok) {
+        const deezerData = await deezerRes.json();
+        const dItem = selectBestCandidate(deezerData?.data, cleanTitleInput, cleanArtistInput, extraTitleAliases, artistAliases);
+        if (dItem && (dItem.preview || dItem.album?.cover_xl || dItem.album?.cover_big)) {
+          const knownYear = lookupKnownOriginalYear(cleanTitleInput, cleanArtistInput);
+          const result = {
+            previewUrl: dItem.preview || null,
+            artworkUrl: dItem.album?.cover_xl || dItem.album?.cover_big || dItem.album?.cover_medium || null,
+            year: knownYear || null,
+            altTitle: dItem.title || null,
+            altArtist: dItem.artist?.name || null,
+          };
+          previewCache.set(cacheKey, result);
+          return result;
+        }
       }
     }
   } catch {}
@@ -690,7 +899,7 @@ export function extractPlaylistId(playlistInput) {
 export async function enrichTracksMetadata(tracks) {
   if (!Array.isArray(tracks) || tracks.length === 0) return tracks;
 
-  const CONCURRENCY = 25;
+  const CONCURRENCY = 4;
   let cursor = 0;
 
   async function enrichSingleTrack(t) {
@@ -720,7 +929,7 @@ export async function enrichTracksMetadata(tracks) {
 
       // 3. Query iTunes/Deezer fallback if year, coverUrl, or previewUrl is missing
       if (!t.year || !t.coverUrl || !t.previewUrl) {
-        const res = await resolveAudioPreview(t.title, t.artist, t.aliases?.title);
+        const res = await resolveAudioPreview(t.title, t.artist, t.aliases?.title, t.aliases?.artist);
         if (res) {
           if (!t.year && res.year) t.year = res.year;
           if (!t.coverUrl && res.artworkUrl) t.coverUrl = res.artworkUrl;
@@ -728,7 +937,7 @@ export async function enrichTracksMetadata(tracks) {
           if (res.altTitle && isTitleMatching(t.title, res.altTitle, t.aliases?.title) && !t.aliases.title.includes(res.altTitle)) {
             t.aliases.title.push(res.altTitle);
           }
-          if (res.altArtist && isArtistMatching(t.artist, res.altArtist) && !t.aliases.artist.includes(res.altArtist)) {
+          if (res.altArtist && isArtistMatching(t.artist, res.altArtist, t.aliases?.artist) && !t.aliases.artist.includes(res.altArtist)) {
             t.aliases.artist.push(res.altArtist);
           }
         }
@@ -769,6 +978,9 @@ export async function enrichTracksMetadata(tracks) {
     while (cursor < tracks.length) {
       const idx = cursor++;
       await enrichSingleTrack(tracks[idx]);
+      if (cursor % 4 === 0) {
+        await new Promise(r => setTimeout(r, 40));
+      }
     }
   });
   await Promise.all(workers);

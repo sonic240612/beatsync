@@ -41,8 +41,14 @@ app.get('/api/audio/:trackId', async (req, res) => {
   if (!track) return res.status(404).send('Track not found');
   if (track.previewUrl) return res.redirect(track.previewUrl);
   try {
-    const resolved = await resolveAudioPreview(track.title, track.artist);
-    if (resolved?.previewUrl) return res.redirect(resolved.previewUrl);
+    const resolved = await resolveAudioPreview(track.title, track.artist, track.aliases?.title, track.aliases?.artist);
+    if (resolved?.previewUrl) {
+      track.previewUrl = resolved.previewUrl;
+      if (resolved.artworkUrl && !track.coverUrl) {
+        track.coverUrl = resolved.artworkUrl;
+      }
+      return res.redirect(resolved.previewUrl);
+    }
   } catch {}
   return res.status(404).send('Audio preview not found');
 });

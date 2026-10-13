@@ -8,6 +8,7 @@ const BASE_TRACKS = [
     title: '좋은 날',
     artist: '아이유',
     year: 2010,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/12/de/86/12de86be-3968-e309-f4da-3e624ec4ff49/mzaf_11516704482831655132.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['좋은날', 'good day'], artist: ['iu', '이지은'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/6d/2e/c9/6d2ec954-d8d8-b26a-1a8f-def6026815c5/mzi.orccormf.jpg/600x600bb.jpg',
@@ -28,6 +29,7 @@ const BASE_TRACKS = [
     title: 'Hype Boy',
     artist: 'NewJeans',
     year: 2022,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/85/f3/08/85f30899-e93c-35e2-4742-df57fc2d3552/mzaf_14134842621180071043.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['하입보이', 'hypeboy'], artist: ['뉴진스', 'new jeans'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/4e/64/34/4e64344b-3ac6-c503-2c41-257a15401416/192641873096_Cover.jpg/600x600bb.jpg',
@@ -41,6 +43,7 @@ const BASE_TRACKS = [
     category: 'kpop_hits',
     aliases: { title: ['뚜두뚜두', 'ddudu ddudu'], artist: ['블랙핑크', '블핑'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/5e/5d/c3/5e5dc3a6-797b-dee5-9f51-2dcbf447c48e/19UMGIM05046.rgb.jpg/600x600bb.jpg',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/55/1e/1a/551e1aca-9847-6730-9c3f-3297ae3605b8/mzaf_5850823266050053080.plus.aac.p.m4a',
     spotifyUrl: 'https://open.spotify.com/track/2yW9nBvH9925N9b2R2k2k2',
     },
   {
@@ -118,6 +121,7 @@ const BASE_TRACKS = [
     title: '아주 NICE',
     artist: '세븐틴',
     year: 2016,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/9a/e9/7a/9ae97a20-1d23-7e32-6250-348bc30c24a5/mzaf_16842603062944248890.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['아주나이스', 'very nice', 'ajunice'], artist: ['seventeen', 'svt'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/32/cb/c4/32cbc434-82b9-6b8e-8cc8-752b554b49f9/cover-.jpg/600x600bb.jpg',
@@ -138,6 +142,7 @@ const BASE_TRACKS = [
     title: '한 페이지가 될 수 있게',
     artist: 'DAY6',
     year: 2019,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d3/0a/16/d30a1693-6cfc-004d-7415-3a8a9ed0ef1d/mzaf_2368053571738456111.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['time of our life', '한페이지가될수있게'], artist: ['데이식스', 'day6'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/7c/51/b4/7c51b4a5-a049-ed9c-126f-2eac310060d1/738676857337_Cover.jpg/600x600bb.jpg',
@@ -148,6 +153,7 @@ const BASE_TRACKS = [
     title: '아무노래',
     artist: '지코',
     year: 2020,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/7f/32/c8/7f32c896-bc1d-ad7e-fe8f-a58168aa82e0/mzaf_13747279039333382096.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['any song', 'anysong'], artist: ['zico', '우지호'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/14/1e/87/141e87bd-a541-e26a-bc74-c586d3e68d75/ZICO_cover_4000px.jpg/600x600bb.jpg',
@@ -170,6 +176,7 @@ const BASE_TRACKS = [
     title: '난 알아요',
     artist: '서태지와 아이들',
     year: 1992,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/df/44/4d/df444d36-87ec-7246-25c1-6cf94b7f3888/mzaf_14811884677455670202.plus.aac.p.m4a',
     category: 'kpop_retro',
     aliases: { title: ['난알아요', 'i know'], artist: ['서태지', '서태지와아이들'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/ad/78/22/ad7822cf-49f9-dcac-7b75-2028492a9907/8809704420648_Cover.jpg/600x600bb.jpg',
@@ -200,6 +207,7 @@ const BASE_TRACKS = [
     title: '하늘을 달리다',
     artist: '이적',
     year: 2003,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/9f/7b/67/9f7b6731-e876-145f-4bec-8708414ad05b/mzaf_15505713524307334368.plus.aac.p.m4a',
     category: 'kpop_retro',
     aliases: { title: ['running in the sky'], artist: ['lee juck'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music/49/6b/ca/mzi.kiznsfbv.jpg/600x600bb.jpg',
@@ -282,6 +290,7 @@ const BASE_TRACKS = [
     title: 'Supernova',
     artist: 'aespa',
     year: 2024,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/f6/cc/58/f6cc5863-c60a-caac-e7f8-bd66b414a917/mzaf_8631809138360097160.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['슈퍼노바'], artist: ['에스파'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/50/7e/e0/507ee09f-ccfd-1e3c-af90-ca5e92b1221b/00888735949869_Cover.jpg/600x600bb.jpg',
@@ -326,12 +335,14 @@ const BASE_TRACKS = [
     year: 2017,
     category: 'kpop_hits',
     aliases: { title: ['through the night'], artist: ['iu', '이지은'] },
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/85/45/de/8545de32-479c-1424-9dce-5694ad9f5235/mzaf_12278878103860208085.plus.aac.p.m4a',
   },
   {
     id: 'kpop-bts-springday',
     title: '봄날',
     artist: '방탄소년단',
     year: 2017,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ba/76/d5/ba76d586-0dac-c800-f08d-467aef7dc9c0/mzaf_12707603572181808804.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['spring day'], artist: ['bts', '방탄'] },
   },
@@ -340,6 +351,7 @@ const BASE_TRACKS = [
     title: 'Ditto',
     artist: 'NewJeans',
     year: 2022,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/85/72/66/8572665a-d35f-ce5d-43c5-9ae4b69b4b46/mzaf_2317272666428796662.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['디토'], artist: ['뉴진스', 'new jeans'] },
   },
@@ -348,6 +360,7 @@ const BASE_TRACKS = [
     title: '퀸카 (Queencard)',
     artist: '(여자)아이들',
     year: 2023,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/45/40/a5/4540a5a8-906d-718e-6681-86c8b4c0c019/mzaf_1989940222119268016.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['퀸카', 'queencard'], artist: ['여자아이들', '아이들', '(g)i-dle', 'gidle'] },
   },
@@ -372,6 +385,7 @@ const BASE_TRACKS = [
     title: '사건의 지평선',
     artist: '윤하',
     year: 2022,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/32/dd/f3/32ddf3ff-8170-bae6-043c-5a50d02705c4/mzaf_11074393104542524889.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['event horizon'], artist: ['younha'] },
   },
@@ -380,6 +394,7 @@ const BASE_TRACKS = [
     title: '첫 만남은 계획대로 되지 않아',
     artist: 'TWS',
     year: 2024,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ac/8d/97/ac8d9717-2bbf-b1bf-b2e9-476feea6a480/mzaf_11615065500455071115.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['첫만남은 계획대로 되지 않아', 'plot twist'], artist: ['투어스'] },
   },
@@ -388,6 +403,7 @@ const BASE_TRACKS = [
     title: 'Magnetic',
     artist: 'ILLIT',
     year: 2024,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/e8/7e/67/e87e6795-4ada-2f65-d562-1fd2a3eddfdf/mzaf_11263458879279601822.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['마그네틱'], artist: ['아일릿'] },
   },
@@ -396,6 +412,7 @@ const BASE_TRACKS = [
     title: '고민중독',
     artist: 'QWER',
     year: 2024,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ca/f2/aa/caf2aa58-40ef-8460-cf65-0f97848da839/mzaf_11004362433324424334.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['t.b.h', 'tbh'], artist: ['큐더블유이알'] },
   },
@@ -412,6 +429,7 @@ const BASE_TRACKS = [
     title: 'Get A Guitar',
     artist: 'RIIZE',
     year: 2023,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d0/7e/99/d07e99d2-ee05-19b4-9d41-48e596cbd1bd/mzaf_11553314001417296216.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['겟 어 기타', '겟어기타'], artist: ['라이즈'] },
   },
@@ -420,6 +438,7 @@ const BASE_TRACKS = [
     title: 'APT.',
     artist: 'ROSÉ, Bruno Mars',
     year: 2024,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/7a/15/38/7a1538f3-f41a-a2eb-0f24-8eb6712ee043/mzaf_7740628412097685267.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['아파트', 'apt'], artist: ['로제', 'rose', '브루노 마스', 'bruno mars'] },
   },
@@ -468,8 +487,10 @@ const BASE_TRACKS = [
     title: '신호등',
     artist: '이무진',
     year: 2021,
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/9c/b5/3a/9cb53a36-d58f-d9a8-b23c-5bc1d28ef431/mzaf_17732560313905705620.plus.aac.p.m4a',
     category: 'kpop_hits',
     aliases: { title: ['traffic light'], artist: ['lee mujin'] },
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/9c/b5/3a/9cb53a36-d58f-d9a8-b23c-5bc1d28ef431/mzaf_17732560313905705620.plus.aac.p.m4a',
   },
 
   // Additional 1990~2000s Retro K-Pop (kpop_retro)
@@ -1088,17 +1109,30 @@ const BASE_TRACKS = [
 ];
 
 function deduplicateCatalog(items) {
-  const seen = new Set();
-  const list = [];
+  const map = new Map();
   for (const item of items) {
     if (!item || !item.title) continue;
     const key = `${String(item.title).toLowerCase().trim()}:::${String(item.artist).toLowerCase().trim()}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      list.push(item);
+    if (!map.has(key)) {
+      map.set(key, { ...item });
+    } else {
+      const existing = map.get(key);
+      const titleAliases = Array.from(new Set([...(existing.aliases?.title || []), ...(item.aliases?.title || [])]));
+      const artistAliases = Array.from(new Set([...(existing.aliases?.artist || []), ...(item.aliases?.artist || [])]));
+      map.set(key, {
+        ...existing,
+        ...item,
+        previewUrl: item.previewUrl || existing.previewUrl,
+        coverUrl: item.coverUrl || existing.coverUrl,
+        spotifyUrl: item.spotifyUrl || existing.spotifyUrl,
+        aliases: {
+          title: titleAliases,
+          artist: artistAliases,
+        },
+      });
     }
   }
-  return list;
+  return Array.from(map.values());
 }
 
 export const tracks = deduplicateCatalog([...BASE_TRACKS, ...MEGA_HITS]);

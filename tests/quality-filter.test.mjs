@@ -72,4 +72,23 @@ import {
   assert.equal(res.altArtist, 'BTS', 'Alt artist must be BTS');
 }
 
+// 5. Reported tracks resolution test
+{
+  const reportedTracks = [
+    { title: '신호등', artist: '이무진', aliases: { title: ['traffic light'], artist: ['lee mujin'] } },
+    { title: '나만, 봄', artist: '볼빨간사춘기', aliases: { title: ['나만 봄', '나만봄'], artist: ['bol4', '볼사'] } },
+    { title: '雪の華', artist: '中島美嘉', aliases: { title: ['눈의 꽃', '유키노하나', 'yuki no hana'], artist: ['나카시마 미카'] } },
+    { title: 'さよならエレジー', artist: '菅田将暉', aliases: { title: ['사요나라 엘레지', '안녕 엘레지'], artist: ['스다 마사키'] } },
+    { title: 'きらり', artist: '藤井風', aliases: { title: ['키라리', '반짝임'], artist: ['후지이 카제', 'fujii kaze'] } },
+    { title: 'Mixed Nuts', artist: 'Official髭男dism', aliases: { title: ['믹스 넛', '스파이 패밀리'], artist: ['오피셜히게단디즘', '히게단'] } }
+  ];
+
+  for (const t of reportedTracks) {
+    const res = await resolveAudioPreview(t.title, t.artist, t.aliases.title, t.aliases.artist);
+    assert.ok(res, `Track "${t.title}" by "${t.artist}" should resolve`);
+    assert.ok(res.previewUrl, `Track "${t.title}" by "${t.artist}" should have previewUrl`);
+    assert.ok(typeof res.previewUrl === 'string' && res.previewUrl.startsWith('http'), `PreviewUrl should be HTTP URL`);
+  }
+}
+
 console.log('quality-filter: all assertions passed!');
