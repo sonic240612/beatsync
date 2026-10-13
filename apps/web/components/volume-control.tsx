@@ -143,7 +143,7 @@ export function VolumeControl({
         onClick={() => setOpen(true)}
         aria-label={`음량 설정 (현재 ${percent}%)`}
         title={`음량 설정 (${percent}%)`}
-        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+        className={`flex items-center gap-1 sm:gap-1.5 rounded-full border px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs font-semibold transition-all ${
           open
             ? 'border-emerald-400 bg-emerald-400/20 text-emerald-300 shadow-sm'
             : 'border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white hover:border-slate-600'
@@ -161,14 +161,14 @@ export function VolumeControl({
             role="dialog"
             aria-modal="true"
             aria-label="노래 재생 음량 설정"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
             onClick={e => {
               if (e.target === e.currentTarget) setOpen(false);
             }}
           >
             <div
               data-liquid-surface
-              className="liquid-glass-card max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 relative"
+              className="liquid-glass-card max-w-md w-full p-4 sm:p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 relative"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}

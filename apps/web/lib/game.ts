@@ -145,7 +145,7 @@ type Store = {
 
 export const useGame = create<Store>((set, get) => ({
   socket: null,
-  me: null,
+  me: readSession()?.playerId || null,
   state: null,
   reveal: null,
   over: null,
@@ -223,14 +223,21 @@ export const useGame = create<Store>((set, get) => ({
       const url = process.env.NEXT_PUBLIC_GAME_URL || defaultHost;
       const socket = existing ?? io(url, { transports: ['websocket'], reconnection: true });
 
-      socket.on('connect', () => {
+      socket.on('connect', async () => {
         set({ socket, error: '' });
         const session = readSession();
         if (!session) return;
-        socket.timeout(5000).emit('room:resume', session, (result: { ok: boolean; state?: RoomState } | undefined) => {
-          if (result?.ok && result.state) set({ me: session.playerId, state: result.state });
-          else if (result && !result.ok && typeof window !== 'undefined') localStorage.removeItem(SESSION_KEY);
-        });
+        try {
+          const result = await socket.timeout(5000).emitWithAck('room:resume', session) as { ok: boolean; state?: RoomState; playerId?: string; error?: string };
+          if (result?.ok && result.state) {
+            set({ me: result.playerId || session.playerId, state: result.state });
+          } else if (result && !result.ok) {
+            if (typeof window !== 'undefined') localStorage.removeItem(SESSION_KEY);
+            set({ me: null, state: null });
+          }
+        } catch {
+          // If timeout or network temporary glitch, keep session for subsequent reconnect
+        }
       });
 
       socket.on('round:part_solved', (data: { type: 'title' | 'artist'; playerId: string; playerName: string; title?: string; artist?: string; scores: Record<string, number>; solvers: RoundSolvers }) => {
@@ -251,11 +258,13 @@ export const useGame = create<Store>((set, get) => ({
       });
 
       socket.on('room:state', (state: RoomState) => {
+        const session = readSession();
         set(prev => {
           const nextReveal = state.phase === 'playing' || state.phase === 'lobby'
             ? null
             : (state.reveal ?? prev.reveal ?? null);
           return {
+            me: prev.me || session?.playerId || null,
             state,
             reveal: nextReveal,
           };

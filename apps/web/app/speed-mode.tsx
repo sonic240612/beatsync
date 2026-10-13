@@ -238,7 +238,7 @@ export default function SpeedMode() {
   }
 
   return (
-    <section data-liquid-surface className="liquid-glass-card p-6 sm:p-8 space-y-6">
+    <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
       <audio
         ref={audio}
         src={state?.preview?.url || undefined}
@@ -252,15 +252,35 @@ export default function SpeedMode() {
       />
 
       {/* Header Info */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/40 pb-4">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            Speed Quiz Mode
-          </span>
-          <h2 className="text-2xl font-black">스피드 퀴즈</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/40 pb-3 sm:pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-400">
+              Speed Quiz Mode
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black">스피드 퀴즈</h2>
+          </div>
+
+          {/* On mobile: Round & Timer aligned with title */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
+              R <span className="font-mono text-white">{(state?.roundId ?? 0)}</span>/{state?.settings.rounds}
+            </div>
+            {state?.phase === 'playing' && !activeReveal && (
+              <div
+                className={`flex items-center gap-1 rounded-xl border px-2.5 py-1 text-[11px] font-bold font-mono transition-colors ${
+                  seconds <= 10
+                    ? 'border-rose-500/50 bg-rose-500/20 text-rose-300 animate-pulse'
+                    : 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+                }`}
+              >
+                ⏱ {seconds}s
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
           <VolumeControl />
 
           {/* Always-Active Skip Button in Header */}
@@ -269,18 +289,18 @@ export default function SpeedMode() {
             onClick={handleSkip}
             disabled={skipping}
             title={activeReveal ? '다음 노래로 넘기기' : '이 문제 넘기기 (정답 확인)'}
-            className="liquid-btn-secondary px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
+            className="liquid-btn-secondary px-2.5 py-1.5 sm:px-3 text-xs font-bold flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
           >
-            <span>⏭️ {activeReveal ? '다음 노래로' : '문제 넘기기'}</span>
+            <span>⏭️ {activeReveal ? '다음 곡' : '넘기기'}</span>
           </button>
 
-          <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
+          <div className="hidden sm:block rounded-xl border border-slate-700/60 bg-slate-800/50 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
             라운드 <span className="font-mono text-white text-sm">{(state?.roundId ?? 0)}</span> / {state?.settings.rounds}
           </div>
 
           {state?.phase === 'playing' && !activeReveal && (
             <div
-              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold font-mono transition-colors ${
+              className={`hidden sm:flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold font-mono transition-colors ${
                 seconds <= 10
                   ? 'border-rose-500/50 bg-rose-500/20 text-rose-300 animate-pulse'
                   : 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
@@ -294,14 +314,14 @@ export default function SpeedMode() {
 
       {/* Audio Autoplay Block Notice */}
       {audioBlocked && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-5 py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-base">🔊</span>
-            <span>브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
+            <span className="text-[11px] sm:text-xs">브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
           </div>
           <button
             onClick={handleManualPlay}
-            className="liquid-btn-primary px-4 py-2 text-xs font-bold shrink-0"
+            className="liquid-btn-primary px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-bold shrink-0"
           >
             소리 켜기
           </button>
@@ -309,15 +329,15 @@ export default function SpeedMode() {
       )}
 
       {/* Dynamic Sound Visualizer & Replay Controls */}
-      <div className="py-4 flex flex-col items-center justify-center space-y-3">
-        <div className="flex h-20 items-end justify-center gap-1.5 sm:gap-2 px-4" aria-hidden="true">
+      <div className="py-2 sm:py-4 flex flex-col items-center justify-center space-y-2 sm:space-y-3">
+        <div className="flex h-12 sm:h-20 items-end justify-center gap-1 sm:gap-2 px-2 sm:px-4" aria-hidden="true">
           {[24, 48, 36, 68, 52, 80, 60, 42, 64, 46, 30, 56, 38, 70, 50, 28].map((baseHeight, i) => {
-            const dynamicHeight = isPlaying && !activeReveal ? Math.max(14, (baseHeight * (0.6 + Math.sin(Date.now() / 200 + i) * 0.4))) : 8;
+            const dynamicHeight = isPlaying && !activeReveal ? Math.max(10, (baseHeight * 0.6 * (0.6 + Math.sin(Date.now() / 200 + i) * 0.4))) : 6;
             return (
               <span
                 key={i}
                 style={{ height: `${dynamicHeight}px` }}
-                className={`w-2 sm:w-2.5 sound-bar transition-all duration-150 ${
+                className={`w-1.5 sm:w-2.5 sound-bar transition-all duration-150 ${
                   isPlaying && !activeReveal ? 'opacity-90 shadow-sm' : 'opacity-25'
                 }`}
               />

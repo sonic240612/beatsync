@@ -97,7 +97,7 @@ io.on('connection', (socket) => {
     if (rooms.size >= 100) throw Error('방이 가득 찼습니다.');
     let code; do { code = randomBytes(3).toString('hex').toUpperCase(); } while (rooms.has(code));
     const { playerId, token } = identity();
-    const room = { code, phase: 'lobby', hostId: playerId, settings: { mode: 'speed', target: 'both', rounds: 10, targetCards: 10, snippetSeconds: 15, musicSource: data?.musicSource || 'kpop_hits', playlistUrl: '' }, players: [{ id: playerId, name: readName(data), token, connected: true, disconnectedAt: 0, socketId: '' }] };
+    const room = { code, phase: 'lobby', hostId: playerId, creatorId: playerId, settings: { mode: 'speed', target: 'both', rounds: 10, targetCards: 10, snippetSeconds: 15, musicSource: data?.musicSource || 'kpop_hits', playlistUrl: '' }, players: [{ id: playerId, name: readName(data), token, connected: true, disconnectedAt: 0, socketId: '' }] };
     rooms.set(code, room);
     enter(room, room.players[0]);
     return { playerId, token, state: publicRoom(room) };
@@ -122,6 +122,9 @@ io.on('connection', (socket) => {
     const player = room?.players.find(p => p.id === data?.playerId);
     if (!player || typeof data?.token !== 'string' || player.token !== data.token) throw Error('재접속 정보가 올바르지 않습니다.');
     player.connected = true; player.disconnectedAt = 0;
+    if (room.creatorId === player.id) {
+      room.hostId = player.id;
+    }
     enter(room, player);
     return { playerId: player.id, token: player.token, state: publicRoom(room) };
   }));
@@ -133,7 +136,16 @@ io.on('connection', (socket) => {
     socket.leave(room.code);
     socket.data.code = null; socket.data.playerId = null;
     room.players = room.players.filter(p => p.id !== playerId);
-    if (!room.players.length) rooms.delete(room.code); else emitState(room);
+    if (!room.players.length) rooms.delete(room.code); else {
+      if (room.hostId === playerId) {
+        const connected = room.players.filter(p => p.connected);
+        room.hostId = connected.length ? connected[0].id : room.players[0].id;
+        if (room.creatorId === playerId) {
+          room.creatorId = room.hostId;
+        }
+      }
+      emitState(room);
+    }
     return toAck({});
   }));
 
@@ -293,7 +305,16 @@ setInterval(() => {
     const before = room.players.length;
     room.players = room.players.filter(p => p.connected || now - p.disconnectedAt < GRACE_MS);
     if (!room.players.length) rooms.delete(room.code);
-    else if (room.players.length !== before) emitState(room);
+    else if (room.players.length !== before) {
+      if (!room.players.some(p => p.id === room.hostId)) {
+        const connected = room.players.filter(p => p.connected);
+        room.hostId = connected.length ? connected[0].id : room.players[0].id;
+      }
+      if (!room.players.some(p => p.id === room.creatorId)) {
+        room.creatorId = room.hostId;
+      }
+      emitState(room);
+    }
   }
 }, Math.max(50, Math.min(GRACE_MS / 2, 500))).unref();
 

@@ -431,6 +431,30 @@ body[data-mode="light"] .apple-glass-row:hover {
   box-sizing: border-box;
 }
 
+@media (max-width: 640px) {
+  .liquid-segment-group,
+  .apple-glass-segment-group {
+    padding: 3px !important;
+    gap: 1.5px !important;
+  }
+  .liquid-segment-group .tab-btn,
+  .apple-glass-segment-group .tab-btn,
+  .tab-btn {
+    min-height: 36px !important;
+    padding: 6px 6px !important;
+    font-size: 0.76rem !important;
+    letter-spacing: -0.025em !important;
+  }
+  .apple-glass-row {
+    padding: 12px 12px !important;
+    border-radius: 16px !important;
+    gap: 10px !important;
+  }
+  .liquid-glass-card {
+    border-radius: 20px !important;
+  }
+}
+
 .liquid-segment-group.volume-presets-control .tab-btn,
 .liquid-segment-group.liquid-segment-compact .tab-btn {
   min-height: 32px;

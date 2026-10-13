@@ -146,29 +146,29 @@ export default function PracticePage() {
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Floating Header */}
-      <header data-liquid-surface className="liquid-glass-pill sticky top-4 z-40 mb-8 flex items-center justify-between px-5 py-3 sm:px-7 sm:py-4">
-        <a href="/" className="flex items-center gap-2.5 text-decoration-none">
+      <header data-liquid-surface className="liquid-glass-pill sticky top-3 sm:top-4 z-40 mb-6 sm:mb-8 flex items-center justify-between px-3.5 py-2.5 sm:px-7 sm:py-4">
+        <a href="/" className="flex items-center gap-2 sm:gap-2.5 text-decoration-none min-w-0">
           <img
             src="/icon.svg"
             alt="BeatSync"
-            className="h-9 w-9 rounded-xl shadow-md shrink-0 object-contain"
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-md shrink-0 object-contain"
           />
-          <div>
-            <h1 className="text-lg font-black tracking-tight sm:text-xl">
+          <div className="truncate">
+            <h1 className="text-base sm:text-xl font-black tracking-tight truncate">
               Beat<span className="text-emerald-400">Sync</span>
-              <span className="ml-2 text-xs font-medium text-slate-400">1인 연습 모드</span>
+              <span className="ml-1.5 text-xs font-medium text-slate-400 hidden sm:inline">1인 연습 모드</span>
             </h1>
           </div>
         </a>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <VolumeControl />
 
           <a
             href="/"
-            className="rounded-full border border-slate-700/60 bg-slate-800/40 px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+            className="rounded-full border border-slate-700/60 bg-slate-800/40 px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-slate-300 hover:text-white transition-colors"
           >
-            ← 메인 대기실로
+            ← 로비로
           </a>
 
 

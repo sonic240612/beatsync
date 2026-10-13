@@ -120,26 +120,25 @@ export default function Home() {
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       {/* Floating Header */}
-      <header data-liquid-surface className="liquid-glass-pill sticky top-4 z-40 mb-8 flex items-center justify-between px-5 py-3 sm:px-7 sm:py-4">
-        <a href="/" className="flex items-center gap-2.5 text-decoration-none">
+      <header data-liquid-surface className="liquid-glass-pill sticky top-3 sm:top-4 z-40 mb-6 sm:mb-8 flex items-center justify-between px-3.5 py-2.5 sm:px-7 sm:py-4">
+        <a href="/" className="flex items-center gap-2 sm:gap-2.5 text-decoration-none min-w-0">
           <img
             src="/icon.svg"
             alt="BeatSync"
-            className="h-9 w-9 rounded-xl shadow-md shrink-0 object-contain"
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-md shrink-0 object-contain"
           />
-          <div>
-            <h1 className="text-lg font-black tracking-tight sm:text-xl">
+          <div className="truncate">
+            <h1 className="text-base sm:text-xl font-black tracking-tight truncate">
               Beat<span className="text-emerald-400">Sync</span>
-              <span className="ml-2 text-xs font-medium text-slate-400">비트싱크</span>
+              <span className="ml-1.5 text-xs font-medium text-slate-400 hidden sm:inline">비트싱크</span>
             </h1>
           </div>
         </a>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <a
             href="/practice"
-            className="rounded-full border border-slate-700/60 bg-slate-800/40 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white transition-colors"
+            className="rounded-full border border-slate-700/60 bg-slate-800/40 px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-medium text-slate-300 hover:text-white transition-colors"
           >
             연습 모드
           </a>
@@ -304,16 +303,16 @@ export default function Home() {
       {inRoom && (
         <div className="space-y-6">
           {/* Room Header Card (Apple visionOS Floating Bar) */}
-          <section className="liquid-glass-card flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
-            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+          <section className="liquid-glass-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 sm:p-6">
+            <div className="flex items-center justify-between sm:justify-start gap-3">
               {/* Room Code Display Capsule */}
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
+              <div className="flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
                 <div>
                   <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">방 코드</span>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
                     <span
-                      className={`font-mono text-2xl sm:text-3xl font-black tracking-widest text-emerald-400 ${
-                        showRoomCode ? '' : 'select-none tracking-[0.25em]'
+                      className={`font-mono text-xl sm:text-3xl font-black tracking-widest text-emerald-400 ${
+                        showRoomCode ? '' : 'select-none tracking-[0.2em] sm:tracking-[0.25em]'
                       }`}
                     >
                       {showRoomCode ? state.code : '••••••'}
@@ -324,14 +323,14 @@ export default function Home() {
                       onClick={() => setShowRoomCode(prev => !prev)}
                       title={showRoomCode ? '방 코드 숨기기' : '방 코드 보이기'}
                       aria-label={showRoomCode ? '방 코드 숨기기' : '방 코드 보이기'}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:border-emerald-400/40 transition-colors shadow-sm"
+                      className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:border-emerald-400/40 transition-colors shadow-sm"
                     >
                       {showRoomCode ? (
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                         </svg>
                       ) : (
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
@@ -342,7 +341,7 @@ export default function Home() {
                       data-liquid-surface
                       onClick={copyRoomCode}
                       title="코드 복사"
-                      className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:text-white hover:border-emerald-400/40 transition-colors shadow-sm"
+                      className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-slate-200 hover:text-white hover:border-emerald-400/40 transition-colors shadow-sm"
                     >
                       {copied ? (
                         <>
@@ -351,7 +350,7 @@ export default function Home() {
                         </>
                       ) : (
                         <>
-                          <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
                           <span>복사</span>
@@ -363,11 +362,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3">
               {/* Participant Count Pill */}
-              <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
+              <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
-                <span className="text-xs font-bold text-slate-200">
+                <span className="text-[11px] sm:text-xs font-bold text-slate-200">
                   참가자 <span className="text-emerald-400 font-mono font-black">{state.players.length}</span> / 8명
                 </span>
               </div>
@@ -377,7 +376,7 @@ export default function Home() {
                 type="button"
                 data-liquid-surface
                 onClick={() => act(leaveRoom)}
-                className="rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-4 py-2 text-xs font-bold text-rose-300 transition-colors shadow-sm"
+                className="rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold text-rose-300 transition-colors shadow-sm"
               >
                 나가기
               </button>
@@ -386,7 +385,7 @@ export default function Home() {
 
           {/* Lobby Settings Card */}
           {state.phase === 'lobby' && (
-            <section data-liquid-surface className="liquid-glass-card p-6 sm:p-8 space-y-6">
+            <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-5 sm:space-y-6">
               {/* Settings Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">

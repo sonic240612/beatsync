@@ -243,7 +243,7 @@ export default function TimelineMode() {
                 <div key={`${card.trackId}-${idx}`} className="flex items-center gap-3 shrink-0">
                   {/* Winner Timeline Card */}
                   <div
-                    className="w-48 sm:w-52 shrink-0 flex flex-col justify-between p-4 rounded-2xl liquid-glass-card border border-emerald-400/40 shadow-xl relative group transition-all hover:scale-[1.02] bg-emerald-950/20"
+                    className="w-40 sm:w-52 shrink-0 flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl liquid-glass-card border border-emerald-400/40 shadow-xl relative group transition-all hover:scale-[1.02] bg-emerald-950/20"
                   >
                     {/* Top Bar: Large Year & Index */}
                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
@@ -359,7 +359,7 @@ export default function TimelineMode() {
   }
 
   return (
-    <section data-liquid-surface className="liquid-glass-card p-6 sm:p-8 space-y-6">
+    <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
       <audio
         ref={audio}
         src={state?.preview?.url || undefined}
@@ -370,29 +370,36 @@ export default function TimelineMode() {
       />
 
       {/* Header Info */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/40 pb-4">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">
-            Tactical Timeline Mode
-          </span>
-          <h2 className="text-2xl font-black">발매연도 타임라인</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/40 pb-3 sm:pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-blue-400">
+              Tactical Timeline Mode
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black">발매연도 타임라인</h2>
+          </div>
+
+          {/* On mobile: Round pill next to title */}
+          <div className="sm:hidden rounded-xl border border-slate-700/60 bg-slate-800/50 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
+            R <span className="font-mono text-white">{(state?.roundId ?? 0)}</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
           <VolumeControl />
 
-          <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
+          <div className="hidden sm:block rounded-xl border border-slate-700/60 bg-slate-800/50 px-3.5 py-1.5 text-xs font-semibold text-slate-300">
             라운드 <span className="font-mono text-white text-sm">{(state?.roundId ?? 0)}</span>
           </div>
 
           <div
-            className={`rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-colors ${
+            className={`rounded-xl border px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-bold transition-colors ${
               isMyTurn
                 ? 'border-emerald-400/50 bg-emerald-400/20 text-emerald-300 shadow-sm animate-pulse'
                 : 'border-slate-700/60 bg-slate-800/40 text-slate-400'
             }`}
           >
-            {isMyTurn ? '✦ 내 차례입니다!' : `${currentTurnPlayer?.name || '상대방'}님의 차례`}
+            {isMyTurn ? '✦ 내 차례!' : `${currentTurnPlayer?.name || '상대방'}의 차례`}
           </div>
         </div>
       </div>
@@ -473,12 +480,12 @@ export default function TimelineMode() {
             <h4 className="text-base font-black text-slate-900 dark:text-white">음악을 듣고 발매연도를 유추하세요!</h4>
             <p className="font-mono text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300 mt-1">발매연도: ????년</p>
 
-            <div className="mt-3 pt-2.5 border-t border-emerald-400/20 text-[11px] text-emerald-800 dark:text-emerald-200/90 flex items-center justify-center gap-1.5">
-              <span>👉 이 카드를 잡아 아래 타임라인의 올바른 슬롯으로 <strong>드래그 & 드롭</strong>하세요!</span>
+            <div className="mt-3 pt-2.5 border-t border-emerald-400/20 text-[11px] text-emerald-800 dark:text-emerald-200/90 flex flex-col sm:flex-row items-center justify-center gap-1 text-center">
+              <span>👉 아래 타임라인의 <strong>[ + 배치 ]</strong> 버튼을 터치하거나 카드를 드래그하여 배치하세요!</span>
             </div>
           </div>
           <p className="text-[11px] text-slate-400 text-center">
-            (터치나 클릭으로도 원하는 위치의 <strong>[ + 배치 ]</strong> 버튼을 눌러 바로 삽입할 수 있습니다)
+            (원하는 연대순 위치의 <strong>[ + 배치 ]</strong> 버튼을 누르면 즉시 정답이 제출됩니다)
           </p>
         </div>
       )}
@@ -650,7 +657,7 @@ export default function TimelineMode() {
               <div key={`${card.trackId}-${idx}`} className="flex items-stretch gap-2.5 shrink-0">
                 {/* Horizontal Card */}
                 <div
-                  className="w-44 sm:w-48 shrink-0 flex flex-col justify-between p-3.5 rounded-2xl liquid-glass-card border border-slate-700/70 shadow-lg relative group transition-all"
+                  className="w-38 sm:w-48 shrink-0 flex flex-col justify-between p-3 sm:p-3.5 rounded-2xl liquid-glass-card border border-slate-700/70 shadow-lg relative group transition-all"
                 >
                   {/* Top Bar: Large Year Badge & Index */}
                   <div className="flex items-center justify-between gap-1.5 mb-2">
