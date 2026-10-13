@@ -215,7 +215,7 @@ export class Game {
 
     // Award point for title
     if (matchedTitle) {
-      this.roundSolvers.title = { playerId, playerName };
+      this.roundSolvers.title = { playerId, playerName, answer: track.title };
       this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
       this.room.emit('round:part_solved', {
         type: 'title',
@@ -230,7 +230,7 @@ export class Game {
 
     // Award point for artist
     if (matchedArtist) {
-      this.roundSolvers.artist = { playerId, playerName };
+      this.roundSolvers.artist = { playerId, playerName, answer: track.artist };
       this.scores.set(playerId, (this.scores.get(playerId) || 0) + 1);
       this.room.emit('round:part_solved', {
         type: 'artist',

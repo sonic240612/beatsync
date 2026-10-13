@@ -590,35 +590,77 @@ export default function SpeedMode() {
             const isTitleSolved = !!solvers?.title;
             const isArtistSolved = !!solvers?.artist;
 
+            const titleSolverName = solvers?.title?.playerId === me
+              ? '나'
+              : (solvers?.title?.playerName || '플레이어');
+            const titleAnswer = solvers?.title?.answer;
+
+            const artistSolverName = solvers?.artist?.playerId === me
+              ? '나'
+              : (solvers?.artist?.playerName || '플레이어');
+            const artistAnswer = solvers?.artist?.answer;
+
             return (
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
                 {target !== 'artist' && (
                   <div
-                    className={`flex items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-bold border transition-all ${
+                    className={`flex items-center gap-2 rounded-2xl px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-bold border transition-all ${
                       isTitleSolved
-                        ? 'border-emerald-400/60 bg-emerald-400/20 text-emerald-300 shadow-sm'
-                        : 'border-slate-700/60 bg-slate-800/40 text-slate-300'
+                        ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-200 shadow-md'
+                        : 'border-slate-700/70 bg-slate-800/60 text-slate-200'
                     }`}
                   >
-                    <span>{isTitleSolved ? '✅' : '🎵'}</span>
-                    <span>
-                      <strong>곡 제목</strong>: {isTitleSolved ? `${solvers?.title?.playerName} 정답 (+1점)` : '미해결'}
-                    </span>
+                    <span className="text-base sm:text-lg">{isTitleSolved ? '✅' : '🎵'}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <strong className="text-slate-100">곡 제목:</strong>
+                      {isTitleSolved ? (
+                        <>
+                          {titleAnswer && (
+                            <span className="font-black text-white bg-emerald-400/25 px-2 py-0.5 rounded-lg border border-emerald-400/40 shadow-sm break-all">
+                              {titleAnswer}
+                            </span>
+                          )}
+                          <span className="text-emerald-300 font-semibold text-xs sm:text-sm">
+                            ({titleSolverName} 정답 +1점)
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-extrabold text-amber-300 text-sm sm:text-base">
+                          미해결
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {target !== 'title' && (
                   <div
-                    className={`flex items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-bold border transition-all ${
+                    className={`flex items-center gap-2 rounded-2xl px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-base font-bold border transition-all ${
                       isArtistSolved
-                        ? 'border-cyan-400/60 bg-cyan-400/20 text-cyan-300 shadow-sm'
-                        : 'border-slate-700/60 bg-slate-800/40 text-slate-300'
+                        ? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-200 shadow-md'
+                        : 'border-slate-700/70 bg-slate-800/60 text-slate-200'
                     }`}
                   >
-                    <span>{isArtistSolved ? '✅' : '🎤'}</span>
-                    <span>
-                      <strong>가수 이름</strong>: {isArtistSolved ? `${solvers?.artist?.playerName} 정답 (+1점)` : '미해결'}
-                    </span>
+                    <span className="text-base sm:text-lg">{isArtistSolved ? '✅' : '🎤'}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <strong className="text-slate-100">가수 이름:</strong>
+                      {isArtistSolved ? (
+                        <>
+                          {artistAnswer && (
+                            <span className="font-black text-white bg-cyan-400/25 px-2 py-0.5 rounded-lg border border-cyan-400/40 shadow-sm break-all">
+                              {artistAnswer}
+                            </span>
+                          )}
+                          <span className="text-cyan-300 font-semibold text-xs sm:text-sm">
+                            ({artistSolverName} 정답 +1점)
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-extrabold text-amber-300 text-sm sm:text-base">
+                          미해결
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

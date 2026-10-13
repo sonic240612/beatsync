@@ -45,8 +45,8 @@ export type TimelineEntry = {
 };
 
 export type RoundSolvers = {
-  title?: { playerId: string; playerName: string } | null;
-  artist?: { playerId: string; playerName: string } | null;
+  title?: { playerId: string; playerName: string; answer?: string } | null;
+  artist?: { playerId: string; playerName: string; answer?: string } | null;
 };
 
 export type RoomState = {
@@ -243,9 +243,10 @@ export const useGame = create<Store>((set, get) => ({
       });
 
       socket.on('round:part_solved', (data: { type: 'title' | 'artist'; playerId: string; playerName: string; title?: string; artist?: string; scores: Record<string, number>; solvers: RoundSolvers }) => {
+        const answerText = data.type === 'title' ? data.title : data.artist;
         const msg = data.type === 'title'
-          ? `${data.playerName}님이 제목을 맞추셨습니다!`
-          : `${data.playerName}님이 가수를 맞추셨습니다!`;
+          ? (answerText ? `${data.playerName}님이 제목 "${answerText}"을(를) 맞추셨습니다!` : `${data.playerName}님이 제목을 맞추셨습니다!`)
+          : (answerText ? `${data.playerName}님이 가수 "${answerText}"을(를) 맞추셨습니다!` : `${data.playerName}님이 가수를 맞추셨습니다!`);
         get().addToast(msg, data.type);
         set(prev => {
           if (!prev.state) return prev;
