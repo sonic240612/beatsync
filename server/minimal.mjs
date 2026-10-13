@@ -144,6 +144,9 @@ io.on('connection', (socket) => {
           room.creatorId = room.hostId;
         }
       }
+      if (room.game) {
+        room.game.handlePlayerLeave(playerId);
+      }
       emitState(room);
     }
     return toAck({});
@@ -249,10 +252,13 @@ io.on('connection', (socket) => {
       ? Number(process.env.REVEAL_MS)
       : (room.settings.mode === 'speed' ? 60000 : 0);
 
-    room.game = new Game({ players: room.players, emit: (event, payload) => {
-      if (event === 'game:over') { room.phase = 'finished'; io.to(room.code).emit(event, payload); emitState(room); return; }
-      io.to(room.code).emit(event, payload);
-    } }, { config: { ...room.settings }, revealMs, provider: syncProvider });
+    room.game = new Game({
+      get players() { return room.players; },
+      emit: (event, payload) => {
+        if (event === 'game:over') { room.phase = 'finished'; io.to(room.code).emit(event, payload); emitState(room); return; }
+        io.to(room.code).emit(event, payload);
+      }
+    }, { config: { ...room.settings }, revealMs, provider: syncProvider });
     room.phase = 'playing';
     room.game.start();
     emitState(room);
@@ -298,8 +304,8 @@ io.on('connection', (socket) => {
     const player = room?.players.find(p => p.id === socket.data.playerId);
     if (!player || player.socketId !== socket.id) return;
     player.connected = false; player.disconnectedAt = Date.now();
-    if (room.game && (room.game.phase === 'playing' || room.game.phase === 'reveal')) {
-      room.game.checkSkipVotes();
+    if (room.game) {
+      room.game.handlePlayerDisconnect(player.id);
     }
     emitState(room);
   });
@@ -312,6 +318,9 @@ setInterval(() => {
     room.players = room.players.filter(p => p.connected || now - p.disconnectedAt < GRACE_MS);
     if (!room.players.length) rooms.delete(room.code);
     else if (room.players.length !== before) {
+      if (room.game) {
+        room.game.checkSkipVotes();
+      }
       if (!room.players.some(p => p.id === room.hostId)) {
         const connected = room.players.filter(p => p.connected);
         room.hostId = connected.length ? connected[0].id : room.players[0].id;

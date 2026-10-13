@@ -140,4 +140,116 @@ const step = () => { if (!pending.length) return false; pending.sort((a, b) => a
   assert.equal(game.phase, 'reveal', 'p3가 나가면서 남은 접속자(2명) 전원 동의가 충족되어 즉시 스킵됨');
 }
 
+// 4. Two players: P2 leaves the room via room:leave, THEN P1 presses skip!
+{
+  const roomObj = {
+    players: [
+      { id: 'p1', name: '호스트', connected: true },
+      { id: 'p2', name: '게스트', connected: true },
+    ],
+  };
+
+  const game = new Game({
+    get players() { return roomObj.players; },
+    emit: () => {},
+  }, {
+    config: { mode: 'speed', rounds: 5 },
+    revealMs: 60000,
+    now, timers, clear,
+    provider: {
+      listTracks: () => tracks.map(t => ({ ...t })),
+      getPreview: (t, s) => ({ url: `mock://${t.id}`, start: s }),
+    },
+  });
+
+  game.start();
+  step();
+  assert.equal(game.phase, 'playing');
+
+  // P2 leaves the room!
+  roomObj.players = roomObj.players.filter(p => p.id !== 'p2');
+  game.handlePlayerLeave('p2');
+
+  // P1 is now alone, presses skip!
+  const res = game.skip('p1');
+  assert.equal(res.ok, true);
+  assert.equal(res.skipped, true, '2인 중 1명 퇴장 후 남은 1명이 넘기기를 누르면 즉시 넘어가야 함');
+  assert.equal(game.phase, 'reveal');
+}
+
+// 5. Two players: P1 votes skip (1/2), THEN P2 leaves the room -> auto-advance!
+{
+  const roomObj = {
+    players: [
+      { id: 'p1', name: '호스트', connected: true },
+      { id: 'p2', name: '게스트', connected: true },
+    ],
+  };
+
+  const game = new Game({
+    get players() { return roomObj.players; },
+    emit: () => {},
+  }, {
+    config: { mode: 'speed', rounds: 5 },
+    revealMs: 60000,
+    now, timers, clear,
+    provider: {
+      listTracks: () => tracks.map(t => ({ ...t })),
+      getPreview: (t, s) => ({ url: `mock://${t.id}`, start: s }),
+    },
+  });
+
+  game.start();
+  step();
+
+  // P1 votes to skip (1/2)
+  const res1 = game.skip('p1');
+  assert.equal(res1.voted, true);
+  assert.equal(game.phase, 'playing');
+
+  // P2 leaves!
+  roomObj.players = roomObj.players.filter(p => p.id !== 'p2');
+  game.handlePlayerLeave('p2');
+
+  // Since P1 already voted, it must automatically advance to reveal!
+  assert.equal(game.phase, 'reveal', 'P1이 투표한 상태에서 P2가 퇴장하면 즉시 넘어가야 함');
+}
+
+// 6. Two players: P2 disconnects (browser closed), THEN P1 presses skip!
+{
+  const roomObj = {
+    players: [
+      { id: 'p1', name: '호스트', connected: true },
+      { id: 'p2', name: '게스트', connected: true },
+    ],
+  };
+
+  const game = new Game({
+    get players() { return roomObj.players; },
+    emit: () => {},
+  }, {
+    config: { mode: 'speed', rounds: 5 },
+    revealMs: 60000,
+    now, timers, clear,
+    provider: {
+      listTracks: () => tracks.map(t => ({ ...t })),
+      getPreview: (t, s) => ({ url: `mock://${t.id}`, start: s }),
+    },
+  });
+
+  game.start();
+  step();
+
+  // P2 disconnects!
+  roomObj.players[1].connected = false;
+  game.handlePlayerDisconnect('p2');
+
+  // P1 presses skip!
+  const res = game.skip('p1');
+  assert.equal(res.ok, true);
+  assert.equal(res.skipped, true, '2인 중 1명 연결 끊긴 후 남은 1명이 넘기기를 누르면 즉시 넘어가야 함');
+  assert.equal(game.phase, 'reveal');
+}
+
 console.log('multiplayer-skip: all assertions passed!');
+

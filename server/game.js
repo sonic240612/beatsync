@@ -323,7 +323,14 @@ export class Game {
       const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
       const totalActive = Math.max(1, activePlayers.length);
 
-      if (playerId) {
+      // Prune any votes from departed or disconnected players
+      for (const vId of this.skipVotes) {
+        if (!activePlayers.some(p => p.id === vId)) {
+          this.skipVotes.delete(vId);
+        }
+      }
+
+      if (playerId && activePlayers.some(p => p.id === playerId)) {
         this.skipVotes.add(playerId);
         if (this.skipVotes.size < totalActive) {
           const voter = activePlayers.find(p => p.id === playerId);
@@ -367,7 +374,14 @@ export class Game {
     const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
     const totalActive = Math.max(1, activePlayers.length);
 
-    if (playerId) {
+    // Prune any votes from departed or disconnected players
+    for (const vId of this.skipVotes) {
+      if (!activePlayers.some(p => p.id === vId)) {
+        this.skipVotes.delete(vId);
+      }
+    }
+
+    if (playerId && activePlayers.some(p => p.id === playerId)) {
       this.skipVotes.add(playerId);
       if (this.skipVotes.size < totalActive) {
         const voter = activePlayers.find(p => p.id === playerId);
@@ -400,8 +414,30 @@ export class Game {
     }
     return { ok: true, skipped: true };
   }
+  handlePlayerLeave(playerId) {
+    this.skipVotes.delete(playerId);
+    if (this.config.mode === 'timeline') {
+      this.timelines.delete(playerId);
+      if (this.currentTurn === playerId) {
+        this.advanceTurn();
+        if (this.phase === 'playing') {
+          this.beginTurn();
+        }
+      }
+    }
+    this.checkSkipVotes();
+  }
+  handlePlayerDisconnect(playerId) {
+    this.skipVotes.delete(playerId);
+    if (this.config.mode === 'timeline' && this.currentTurn === playerId) {
+      this.advanceTurn();
+      if (this.phase === 'playing') {
+        this.beginTurn();
+      }
+    }
+    this.checkSkipVotes();
+  }
   checkSkipVotes() {
-    if (this.skipVotes.size === 0) return;
     const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
     const totalActive = Math.max(1, activePlayers.length);
     for (const vId of this.skipVotes) {
@@ -409,13 +445,13 @@ export class Game {
         this.skipVotes.delete(vId);
       }
     }
-    if (this.skipVotes.size >= totalActive) {
+    if (this.skipVotes.size >= totalActive && this.skipVotes.size > 0) {
       if (this.phase === 'playing') {
         this.skip();
       } else if (this.phase === 'reveal') {
         this.skipReveal();
       }
-    } else {
+    } else if (this.skipVotes.size > 0) {
       this.room.emit('round:skip_vote', {
         voterId: '',
         voterName: '',
@@ -427,12 +463,12 @@ export class Game {
     }
   }
   advanceTurn() {
-    const order = this.room.players.map(p => p.id);
-    const from = Math.max(0, order.indexOf(this.currentTurn));
-    for (let step = 1; step <= order.length; step++) {
-      const candidate = order[(from + step) % order.length];
-      if (this.room.players.find(p => p.id === candidate)?.connected !== false) { this.currentTurn = candidate; return; }
-    }
+    const active = (this.room.players || []).filter(p => p.connected !== false);
+    if (!active.length) return;
+    const order = active.map(p => p.id);
+    const from = order.indexOf(this.currentTurn);
+    const nextIdx = from === -1 ? 0 : (from + 1) % order.length;
+    this.currentTurn = order[nextIdx];
   }
   beginTurn() {
     if (this.phase === 'finished' || this.phase === 'stopped') return;
