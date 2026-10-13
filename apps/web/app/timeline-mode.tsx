@@ -44,7 +44,7 @@ export default function TimelineMode() {
   const seconds = useCountdown(endsAt);
   const [audioEnded, setAudioEnded] = useState(false);
 
-  const currentTurnPlayer = state?.players.find(p => p.id === turn);
+  const currentTurnPlayer = (state?.players || []).find(p => p.id === turn);
 
   // Convert vertical mouse wheel scrolling inside timeline card windows into horizontal scrolling
   useEffect(() => {
@@ -157,6 +157,9 @@ export default function TimelineMode() {
 
   // Find track helper (display original text)
   const resolveCard = (entry: TimelineEntry) => {
+    if (!entry) {
+      return { trackId: '', year: 0, title: '곡 정보', artist: '아티스트' };
+    }
     const found = staticTracks.find(t => t.id === entry.trackId);
     const rawTitle = (entry as any).rawTitle || entry.title || found?.title || '곡 정보';
     const rawArtist = (entry as any).rawArtist || entry.artist || found?.artist || '아티스트';
@@ -256,13 +259,22 @@ export default function TimelineMode() {
     };
   }, []);
 
+  const connectedPlayers = useMemo(
+    () => (state?.players || []).filter(p => p.connected !== false),
+    [state?.players]
+  );
+  const activeCount = Math.max(1, connectedPlayers.length);
+  const skipVotes = state?.skipVotes || [];
+  const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
+  const hasVoted = !!me && skipVotes.includes(me);
+
   // Game Over
   if (over) {
     const winnerId = over.winnerId;
-    const winnerPlayer = state?.players.find(p => p.id === winnerId);
+    const winnerPlayer = (state?.players || []).find(p => p.id === winnerId);
     const isWinnerMe = winnerId === me;
-    const rawWinnerCards = state?.timelines?.[winnerId ?? ''] ?? over.timelines?.[winnerId ?? ''] ?? [];
-    const winnerTimeline: TimelineEntry[] = rawWinnerCards.map(resolveCard);
+    const rawWinnerCards = state?.timelines?.[winnerId ?? ''] ?? over?.timelines?.[winnerId ?? ''] ?? [];
+    const winnerTimeline: TimelineEntry[] = Array.isArray(rawWinnerCards) ? rawWinnerCards.map(resolveCard) : [];
 
     return (
       <section data-liquid-surface className="liquid-glass-card p-6 sm:p-10 text-center space-y-8 animate-in fade-in duration-300">
@@ -389,7 +401,7 @@ export default function TimelineMode() {
             참가자별 최종 타임라인 수
           </h4>
           <div className="grid gap-2 sm:grid-cols-2">
-            {state?.players.map(player => {
+            {(state?.players || []).map(player => {
               const count = state?.timelines?.[player.id]?.length ?? 0;
               const isWinner = player.id === winnerId;
               return (
@@ -432,15 +444,6 @@ export default function TimelineMode() {
       </section>
     );
   }
-
-  const connectedPlayers = useMemo(
-    () => (state?.players || []).filter(p => p.connected !== false),
-    [state?.players]
-  );
-  const activeCount = Math.max(1, connectedPlayers.length);
-  const skipVotes = state?.skipVotes || [];
-  const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
-  const hasVoted = !!me && skipVotes.includes(me);
 
   return (
     <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
@@ -928,7 +931,7 @@ export default function TimelineMode() {
             </div>
 
             <div className="space-y-2.5">
-              {state?.players.map(player => {
+              {(state?.players || []).map(player => {
                 const pTimeline = state?.timelines?.[player.id] ?? [];
                 const count = pTimeline.length;
                 const isCurrentTurn = player.id === turn;
