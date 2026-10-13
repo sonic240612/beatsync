@@ -8,8 +8,20 @@ import { resolveAudioPreview, fetchSpotifyPlaylist } from './spotify-provider.js
 import { tracks as catalog } from '../shared/tracks.js';
 
 const app = express();
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 const http = createServer(app);
-const io = new Server(http, { cors: { origin: ['http://127.0.0.1:3000', 'http://localhost:3000'] } });
+const io = new Server(http, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
 const PORT = Number(process.env.PORT || 3001);
 const rooms = new Map();
 const dynamicTracksMap = new Map();
@@ -286,4 +298,5 @@ setInterval(() => {
 }, Math.max(50, Math.min(GRACE_MS / 2, 500))).unref();
 
 const port = Number(process.env.PORT || 3001);
-http.listen(port, '127.0.0.1', () => console.log(`BeatSync minimal http://127.0.0.1:${port}`));
+const host = process.env.HOST || '0.0.0.0';
+http.listen(port, host, () => console.log(`BeatSync minimal running on http://${host}:${port}`));

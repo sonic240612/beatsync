@@ -214,7 +214,13 @@ export const useGame = create<Store>((set, get) => ({
 
       const existing = get().socket;
       if (existing?.connected) return resolve();
-      const url = process.env.NEXT_PUBLIC_GAME_URL || 'http://127.0.0.1:3001';
+      const defaultHost =
+        typeof window !== 'undefined' &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1'
+          ? `${window.location.protocol}//${window.location.hostname}:3001`
+          : 'http://127.0.0.1:3001';
+      const url = process.env.NEXT_PUBLIC_GAME_URL || defaultHost;
       const socket = existing ?? io(url, { transports: ['websocket'], reconnection: true });
 
       socket.on('connect', () => {

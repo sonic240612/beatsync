@@ -15,6 +15,6 @@ nul
 *.log
 beatsync_prd.md
 docs/
-
-
-
+cloudflared.exe
+start-online.bat
+scripts/start-online.mjs
