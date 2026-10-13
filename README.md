@@ -1,4 +1,8 @@
-# BeatSync 비트싱크
+<p align="center">
+  <img src="apps/web/public/icon.svg" alt="BeatSync Icon" width="100" height="100" />
+</p>
+
+# BeatSync (비트싱크)
 
 실시간 멀티플레이어 음악 퀴즈 & 타임라인 카드 배틀 웹 게임.  
 **Spotify 무료(Free) 계정 완벽 지원**, **한·일·영 다국어 음차/번역 정답 엔진**, **Apple Liquid Glass UI** 디자인 시스템을 적용했습니다.
