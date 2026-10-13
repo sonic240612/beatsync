@@ -4,6 +4,21 @@ import { useGame, type TimelineEntry } from '@/lib/game';
 import { tracks as staticTracks } from '@/shared/tracks.js';
 import { VolumeControl } from '@/components/volume-control';
 
+function useCountdown(endsAt?: number) {
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!endsAt) {
+      setLeft(0);
+      return;
+    }
+    const tick = () => setLeft(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    tick();
+    const timer = setInterval(tick, 200);
+    return () => clearInterval(timer);
+  }, [endsAt]);
+  return left;
+}
+
 export default function TimelineMode() {
   const { state, reveal, over, me, insert, skip, forceSkip, volume } = useGame();
   const audio = useRef<HTMLAudioElement>(null);
@@ -24,6 +39,10 @@ export default function TimelineMode() {
   const isPlayingPhase = state?.phase === 'playing';
   const activeReveal = reveal || (state?.phase === 'reveal' ? (state?.reveal || null) : null);
   const targetCards = state?.settings?.targetCards ?? 10;
+  const snippetSec = state?.settings?.snippetSeconds || 15;
+  const endsAt = state?.endsAt;
+  const seconds = useCountdown(endsAt);
+  const [audioEnded, setAudioEnded] = useState(false);
 
   const currentTurnPlayer = state?.players.find(p => p.id === turn);
 
@@ -55,6 +74,30 @@ export default function TimelineMode() {
       audio.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    setAudioBlocked(false);
+    setAudioEnded(false);
+  }, [round]);
+
+  // Stop audio playback once snippet duration (e.g. 15s) has elapsed during guessing
+  useEffect(() => {
+    const el = audio.current;
+    if (!el) return;
+
+    const handleTimeUpdate = () => {
+      if (!activeReveal && el.currentTime >= snippetSec) {
+        el.pause();
+        setIsPlaying(false);
+        setAudioEnded(true);
+      }
+    };
+
+    el.addEventListener('timeupdate', handleTimeUpdate);
+    return () => {
+      el.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  }, [snippetSec, activeReveal]);
 
   // Audio Playback handler
   useEffect(() => {
@@ -97,6 +140,9 @@ export default function TimelineMode() {
       el.volume = volume;
       if (el.src !== state.preview.url) {
         el.src = state.preview.url;
+      }
+      if (el.currentTime >= snippetSec) {
+        el.currentTime = 0;
       }
       el.play()
         .then(() => {
@@ -146,6 +192,7 @@ export default function TimelineMode() {
       .then(() => {
         setAudioBlocked(false);
         setIsPlaying(true);
+        setAudioEnded(false);
       })
       .catch(() => {
         setAudioBlocked(true);
@@ -416,9 +463,22 @@ export default function TimelineMode() {
             <h2 className="text-xl sm:text-2xl font-black">발매연도 타임라인</h2>
           </div>
 
-          {/* On mobile: Round pill next to title */}
-          <div className="sm:hidden rounded-xl border border-slate-700/60 bg-slate-800/50 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
-            R <span className="font-mono text-white">{(state?.roundId ?? 0)}</span>
+          {/* On mobile: Round pill & Timer pill */}
+          <div className="sm:hidden flex items-center gap-1.5">
+            <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
+              R <span className="font-mono text-white">{(state?.roundId ?? 0)}</span>
+            </div>
+            {state?.phase === 'playing' && !activeReveal && (
+              <div
+                className={`rounded-xl border px-2 py-1 text-[11px] font-bold font-mono transition-colors ${
+                  seconds <= 10
+                    ? 'border-rose-500/50 bg-rose-500/20 text-rose-300 animate-pulse'
+                    : 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+                }`}
+              >
+                ⏱ {seconds}s
+              </div>
+            )}
           </div>
         </div>
 
@@ -445,6 +505,18 @@ export default function TimelineMode() {
             라운드 <span className="font-mono text-white text-sm">{(state?.roundId ?? 0)}</span>
           </div>
 
+          {state?.phase === 'playing' && !activeReveal && (
+            <div
+              className={`hidden sm:flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-xs font-bold font-mono transition-colors ${
+                seconds <= 10
+                  ? 'border-rose-500/50 bg-rose-500/20 text-rose-300 animate-pulse'
+                  : 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+              }`}
+            >
+              ⏱ {seconds}초
+            </div>
+          )}
+
           <div
             className={`rounded-xl border px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-bold transition-colors ${
               isMyTurn
@@ -457,47 +529,59 @@ export default function TimelineMode() {
         </div>
       </div>
 
-      {/* Audio Autoplay Block Notice */}
-      {audioBlocked && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-5 py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🔊</span>
-            <span>브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
-          </div>
-          <button onClick={handleManualPlay} className="liquid-btn-primary px-4 py-2 text-xs font-bold shrink-0">
-            소리 켜기
-          </button>
-        </div>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+        {/* Left Column: Interactive Gameplay Area */}
+        <div className="lg:col-span-8 xl:col-span-8 space-y-4 sm:space-y-5 min-w-0">
+          {/* Audio Autoplay Block Notice */}
+          {audioBlocked && (
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-5 py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔊</span>
+                <span>브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
+              </div>
+              <button onClick={handleManualPlay} className="liquid-btn-primary px-4 py-2 text-xs font-bold shrink-0">
+                소리 켜기
+              </button>
+            </div>
+          )}
 
-      {/* Audio Wave Visualizer & Replay Button */}
-      <div className="flex flex-col items-center justify-center gap-2.5 py-2">
-        <div className="flex items-center justify-center gap-2" aria-hidden="true">
-          {[20, 38, 28, 54, 40, 64, 48, 34, 50, 36, 24].map((h, i) => (
-            <span
-              key={i}
-              style={{ height: `${isPlaying && !activeReveal ? h : 8}px` }}
-              className={`w-2 sound-bar transition-all duration-200 ${
-                isPlaying && !activeReveal ? 'opacity-90' : 'opacity-20'
-              }`}
-            />
-          ))}
-        </div>
-        {!activeReveal && state?.preview?.url && (
-          <button
-            type="button"
-            onClick={handleReplay}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold transition-all shadow-md active:scale-95 ${
-              isPlaying
-                ? 'border border-emerald-400/40 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25'
-                : 'border border-emerald-400 bg-emerald-400/25 text-emerald-200 hover:scale-105 animate-pulse'
-            }`}
-          >
-            <span>🔁</span>
-            <span>{isPlaying ? '처음부터 다시 듣기' : '미리듣기 다시 듣기'}</span>
-          </button>
-        )}
-      </div>
+          {/* Audio Wave Visualizer & Replay Button */}
+          <div className="flex flex-col items-center justify-center gap-2.5 py-2">
+            <div className="flex items-center justify-center gap-2" aria-hidden="true">
+              {[20, 38, 28, 54, 40, 64, 48, 34, 50, 36, 24].map((h, i) => (
+                <span
+                  key={i}
+                  style={{ height: `${isPlaying && !activeReveal ? h : 8}px` }}
+                  className={`w-2 sound-bar transition-all duration-200 ${
+                    isPlaying && !activeReveal ? 'opacity-90' : 'opacity-20'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 font-medium text-center">
+              {activeReveal
+                ? '정답 확인 중… 이번 곡을 확인하고 다음 턴으로 넘어가세요.'
+                : isPlaying
+                ? `음악 재생 중 (${snippetSec}초)… 발매연도를 유추해보세요!`
+                : audioEnded
+                ? `미리듣기(${snippetSec}초)가 종료되었습니다. 다시 듣거나 남은 시간(${seconds}초) 내에 카드를 배치하세요!`
+                : '오디오 로딩 중…'}
+            </p>
+            {!activeReveal && state?.preview?.url && (
+              <button
+                type="button"
+                onClick={handleReplay}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold transition-all shadow-md active:scale-95 ${
+                  isPlaying
+                    ? 'border border-emerald-400/40 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25'
+                    : 'border border-emerald-400 bg-emerald-400/25 text-emerald-200 hover:scale-105 animate-pulse'
+                }`}
+              >
+                <span>🔁</span>
+                <span>{isPlaying ? '처음부터 다시 듣기' : '미리듣기 다시 듣기'}</span>
+              </button>
+            )}
+          </div>
 
       {/* Draggable Mystery Question Card (Active Turn Only) */}
       {isMyTurn && isPlayingPhase && !activeReveal && (
@@ -557,12 +641,19 @@ export default function TimelineMode() {
           <div>
             <span
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs sm:text-sm font-bold uppercase shadow-sm ${
-                activeReveal.success !== false
+                activeReveal.timeout
+                  ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50'
+                  : activeReveal.success !== false
                   ? 'bg-emerald-400/25 text-emerald-300 border border-emerald-400/50'
                   : 'bg-rose-500/25 text-rose-300 border border-rose-500/50'
               }`}
             >
-              {activeReveal.success !== false ? (
+              {activeReveal.timeout ? (
+                <>
+                  <span>⏱️</span>
+                  <span><strong>시간 초과!</strong> 60초 내에 카드를 배치하지 못했습니다.</span>
+                </>
+              ) : activeReveal.success !== false ? (
                 <>
                   <span>🎉</span>
                   <span><strong>정답! 올바른 연대순입니다!</strong> (타임라인에 카드 추가 보관)</span>
@@ -575,7 +666,9 @@ export default function TimelineMode() {
               )}
             </span>
             <p className="text-xs text-slate-400 mt-1.5">
-              {activeReveal.success !== false
+              {activeReveal.timeout
+                ? `60초 제한 시간이 지나 카드가 버려졌습니다. (실제 발매연도: ${activeReveal.track.year}년)`
+                : activeReveal.success !== false
                 ? '축하합니다! 카드를 내 타임라인에 안전하게 보관했습니다.'
                 : `실제 발매연도는 ${activeReveal.track.year}년입니다. 연대순과 맞지 않아 카드가 버려졌습니다.`}
             </p>
@@ -817,51 +910,96 @@ export default function TimelineMode() {
         </div>
       </section>
 
-      {/* Opponents Overview Section */}
-      <section className="pt-2">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-          참가자별 타임라인 현황
-        </h4>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {state?.players.map(player => {
-            const count = state?.timelines?.[player.id]?.length ?? 0;
-            return (
-              <div
-                key={player.id}
-                className={`flex items-center justify-between rounded-xl px-4 py-2.5 border transition-all ${
-                  player.id === turn
-                    ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-200'
-                    : 'border-slate-700/50 bg-slate-800/40 text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white">
-                    {player.name.slice(0, 1)}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {player.name}
-                    {player.id === me && <span className="ml-1 text-xs text-emerald-400">(나)</span>}
-                    {player.id === turn && (
-                      <span className="ml-1.5 rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                        현재 턴
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-amber-300">{count} / {targetCards}장</span>
-                  <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-400 rounded-full"
-                      style={{ width: `${Math.min(100, (count / targetCards) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
         </div>
-      </section>
+
+        {/* Right Column: Participant Timeline Status (PC Sticky Sidebar) */}
+        <aside className="lg:col-span-4 xl:col-span-4 lg:sticky lg:top-24 space-y-3 min-w-0">
+          <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-700/50">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <span>👥</span> 참가자별 타임라인 현황
+              </h4>
+              <span className="text-[11px] font-mono font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                목표 {targetCards}장
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {state?.players.map(player => {
+                const pTimeline = state?.timelines?.[player.id] ?? [];
+                const count = pTimeline.length;
+                const isCurrentTurn = player.id === turn;
+                const isMe = player.id === me;
+                const percent = Math.min(100, Math.round((count / targetCards) * 100));
+
+                return (
+                  <div
+                    key={player.id}
+                    className={`rounded-xl p-3 border transition-all ${
+                      isCurrentTurn
+                        ? 'border-emerald-400/80 bg-emerald-400/15 shadow-md shadow-emerald-500/10'
+                        : 'border-slate-700/50 bg-slate-800/40'
+                    }`}
+                  >
+                    {/* Top Row: Name, Badges, Count */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            isCurrentTurn ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-white'
+                          }`}
+                        >
+                          {player.name.slice(0, 1)}
+                        </div>
+                        <span className="text-sm font-semibold truncate text-slate-200">
+                          {player.name}
+                          {isMe && <span className="ml-1 text-xs text-emerald-400 font-bold">(나)</span>}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isCurrentTurn && (
+                          <span className="rounded bg-emerald-400/25 border border-emerald-400/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 animate-pulse">
+                            현재 턴
+                          </span>
+                        )}
+                        <span className="font-mono text-xs font-bold text-amber-300">
+                          {count}/{targetCards}장
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-slate-700/80 rounded-full overflow-hidden mt-2">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full transition-all duration-300"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+
+                    {/* Chronological Year Badges Mini-Deck */}
+                    <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-slate-700/30">
+                      {pTimeline.length === 0 ? (
+                        <span className="text-[10px] text-slate-500">보관된 카드 없음 (0장)</span>
+                      ) : (
+                        pTimeline.map((card, idx) => (
+                          <span
+                            key={`${card.trackId}-${idx}`}
+                            className="inline-flex items-center rounded bg-slate-800/90 border border-slate-700/80 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-300 shadow-sm"
+                            title={`${card.title || '곡'} - ${card.artist || '가수'} (${card.year}년)`}
+                          >
+                            {card.year}년
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }

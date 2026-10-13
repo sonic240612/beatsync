@@ -78,6 +78,7 @@ export type Reveal = {
   scores: Record<string, number>;
   success?: boolean;
   skipped?: boolean;
+  timeout?: boolean;
   revealEndsAt?: number;
 };
 

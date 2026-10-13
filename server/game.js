@@ -130,7 +130,7 @@ export class Game {
     this.lastReveal = null;
     this.skipVotes.clear();
     this.roundStartedAt = this.now();
-    const roundDurationSec = this.config.roundSeconds || (this.config.mode === 'speed' ? 60 : snippetSec);
+    const roundDurationSec = this.config.roundSeconds || 60;
     this.roundEndsAt = this.roundStartedAt + roundDurationSec * 1000;
     this.current = { track, preview };
     this.timer = this.timers(() => this.timeUp(), roundDurationSec * 1000);
@@ -147,7 +147,14 @@ export class Game {
       this.room.emit('round:reveal', revealData);
       this.startTimer = this.timers(() => this.nextRound(), this.revealMs);
     } else {
-      const revealData = this.revealCurrent(null, { success: false, timeout: true });
+      const pid = this.currentTurn;
+      const player = this.room.players?.find(p => p.id === pid);
+      const revealData = this.revealCurrent(null, {
+        success: false,
+        timeout: true,
+        turnPlayerId: pid,
+        turnPlayerName: player?.name,
+      });
       this.room.emit('round:reveal', revealData);
       // Timeline mode: NO auto advance timer. Waits for manual skip/next!
     }
