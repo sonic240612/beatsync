@@ -631,6 +631,29 @@ export default function Home() {
                       </div>
                     </div>
 
+                    {/* Preview Snippet Duration */}
+                    <div className="apple-glass-row sm:col-span-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">⏱️</span>
+                        <div>
+                          <span className="text-[13.5px] font-bold text-slate-200">미리듣기 재생 시간</span>
+                          <p className="text-xs text-slate-400">한 턴 당 음원 재생 길이 (종료 후에도 60초 타이머 동안 유추 가능)</p>
+                        </div>
+                      </div>
+                      <LiquidSegmentGroup
+                        value={state.settings.snippetSeconds || 15}
+                        onChange={s => configure({ snippetSeconds: s })}
+                        disabled={!isHost}
+                        options={[
+                          { value: 5, label: '5초' },
+                          { value: 15, label: '15초' },
+                          { value: 30, label: '30초' },
+                        ]}
+                        accent="emerald"
+                        className="w-full"
+                      />
+                    </div>
+
                     <div className="sm:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/20 bg-sky-100/70 dark:bg-sky-400/5 p-4 text-xs leading-relaxed text-sky-900 dark:text-sky-200/90 backdrop-blur-sm shadow-sm">
                       💡 <strong className="font-black text-sky-950 dark:text-white">타임라인 모드 규칙</strong>: 플레이어는 시작 카드 2장(발매연도 공개)으로 시작합니다. 매 턴 노래를 듣고 내 타임라인 카드 사이의 올바른 연대순 슬롯을 선택해 먼저 <strong className="font-black text-sky-950 dark:text-white">{timelineTargetCards}장</strong>을 채우는 사람이 승리합니다!
                     </div>
