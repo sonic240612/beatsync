@@ -791,75 +791,61 @@ export const GENRE_SEED_MAP = {
   // K-Pop 메가 히트곡 (최신 인기곡 & 공식 차트 대표곡)
   kpop_hits: [
     '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON! (최신 대표 K-Pop)
-    '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea (한국 최신 핫 히트)
     '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation (글로벌 K-Pop 명곡)
-    '37i9dQZF1DX14fiWYoe7Oh', // K-Pop Rising (떠오르는 대세 K-Pop)
   ],
   // 90~2000년대 명곡 (추억의 싸이월드 가요 & 밀레니엄 히트)
   kpop_retro: [
-    '37i9dQZF1DX34m8K0l9x2N', // 2000s K-Pop
-    '37i9dQZF1DX4YnSnipd2eg', // 90s K-Pop
     '37i9dQZF1DX4o1oenSJRJd', // 2000s 추억의 가요 & 팝
+    '37i9dQZF1DXbTxeAdrVG2l', // 90s 명곡
     '37i9dQZF1DX4UtSsGT1Sbe', // 80s 추억의 스매시 히트
   ],
-  // K-Pop 전체 (히트곡 + 레트로 + 라이징 전 세대 총망라)
+  // K-Pop 전체 (히트곡 + 레트로 + 글로벌 전 세대 총망라)
   kpop_all: [
     '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON!
-    '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea
     '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation
-    '37i9dQZF1DX34m8K0l9x2N', // 2000s K-Pop
-    '37i9dQZF1DX4YnSnipd2eg', // 90s K-Pop
-    '37i9dQZF1DX14fiWYoe7Oh', // K-Pop Rising
   ],
   kpop: [
     '37i9dQZF1DX9tPFwDMOaN1',
-    '37i9dQZF1DX1lVhptIYRda',
     '37i9dQZF1DXe5W6diBL5N4',
-    '37i9dQZF1DX34m8K0l9x2N',
-    '37i9dQZF1DX14fiWYoe7Oh',
   ],
   // 글로벌 팝송 TOP (글로벌 차트 1위 및 빌보드 최신 히트)
   pop_hits: [
     '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits (글로벌 팝 1위)
-    '37i9dQZF1DXa2PvUikemBt', // Pop Rising (인기 급상승 팝)
-    '37i9dQZF1DX4JAvHpjipBk', // New Music Friday (최신 트렌드 팝)
-    '37i9dQZF1DX4WYpdgoIcn6', // Chill Hits (대중적인 감성 팝)
+    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s (2010년대 팝 메가 히트)
+    '37i9dQZF1DX4o1oenSJRJd', // All Out 00s (2000년대 팝 메가 히트)
+    '37i9dQZF1DWXRqgorJj26U', // Rock Classics (올타임 록 명곡)
   ],
   // Pop 전체 (80년대부터 최신 빌보드까지 전 시대 팝송)
   pop_all: [
     '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits
-    '37i9dQZF1DX4o1oenSJRJd', // All Out 00s (2000년대 팝)
-    '37i9dQZF1DXbTxeAdrVG2l', // All Out 90s (90년대 팝)
-    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s (2010년대 팝)
-    '37i9dQZF1DX4UtSsGT1Sbe', // All Out 80s (80년대 팝)
+    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s
+    '37i9dQZF1DX4o1oenSJRJd', // All Out 00s
+    '37i9dQZF1DXbTxeAdrVG2l', // All Out 90s
+    '37i9dQZF1DX4UtSsGT1Sbe', // All Out 80s
     '37i9dQZF1DWXRqgorJj26U', // Rock Classics
   ],
   pop: [
     '37i9dQZF1DXcBWIGoYBM5M',
-    '37i9dQZF1DX4o1oenSJRJd',
     '37i9dQZF1DX5Ejj0EkURtP',
+    '37i9dQZF1DX4o1oenSJRJd',
     '37i9dQZF1DXbTxeAdrVG2l',
-    '37i9dQZF1DX4WYpdgoIcn6',
+    '37i9dQZF1DWXRqgorJj26U',
   ],
   // J-Pop 히트곡 (최신 인기 J-Pop 및 애니메이션 메가 히트곡)
   jpop_hits: [
     '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Now (최신 인기 J-Pop)
-    '37i9dQZF1DX9vYRBO9gjDe', // Tokyo Super Hits (도쿄 인기 차트)
     '37i9dQZF1DXafb0IuPwJyF', // Anime Now (인기 애니메이션 주제곡)
   ],
   // J-Pop 전체 (명곡 + 최신곡 + 애니송 전반)
   jpop_all: [
     '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Now
-    '37i9dQZF1DX9vYRBO9gjDe', // Tokyo Super Hits
     '37i9dQZF1DXafb0IuPwJyF', // Anime Now
-    '37i9dQZF1DX6XE7Hirl0Fu', // Anime Classics
   ],
   jpop: [
     '37i9dQZF1DXdbRLJPSmnyq',
-    '37i9dQZF1DX9vYRBO9gjDe',
     '37i9dQZF1DXafb0IuPwJyF',
   ],
-  anime: ['37i9dQZF1DXafb0IuPwJyF', '37i9dQZF1DX6XE7Hirl0Fu'],
+  anime: ['37i9dQZF1DXafb0IuPwJyF'],
   retro: ['37i9dQZF1DX4o1oenSJRJd', '37i9dQZF1DXbTxeAdrVG2l', '37i9dQZF1DX4UtSsGT1Sbe', '37i9dQZF1DX5Ejj0EkURtP'],
   rock: ['37i9dQZF1DWXRqgorJj26U'],
   hiphop: ['37i9dQZF1DX0XUsuxWHRQd'],
@@ -868,11 +854,10 @@ export const GENRE_SEED_MAP = {
   spotify_random: [
     '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits
     '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON!
-    '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea
+    '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation
+    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s
     '37i9dQZF1DX4o1oenSJRJd', // All Out 00s
     '37i9dQZF1DXbTxeAdrVG2l', // All Out 90s
-    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s
-    '37i9dQZF1DX0XUsuxWHRQd', // RapCaviar
     '37i9dQZF1DWXRqgorJj26U', // Rock Classics
     '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Now
     '37i9dQZF1DXafb0IuPwJyF', // Anime Now

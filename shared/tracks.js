@@ -1,6 +1,7 @@
 // Curated Track Catalog for BeatSync (K-Pop & Global Pop with Spotify & iTunes Previews)
+import { MEGA_HITS } from './mega-hits.js';
 
-export const tracks = [
+const BASE_TRACKS = [
   // K-POP Mega Hits (kpop_hits)
   {
     id: 'kpop-iu-goodday',
@@ -1085,6 +1086,22 @@ export const tracks = [
     aliases: { title: ['그저 네게 맑아라', '타다 키미니 하레', 'tada kimi ni hare'], artist: ['요루시카'] },
   },
 ];
+
+function deduplicateCatalog(items) {
+  const seen = new Set();
+  const list = [];
+  for (const item of items) {
+    if (!item || !item.title) continue;
+    const key = `${String(item.title).toLowerCase().trim()}:::${String(item.artist).toLowerCase().trim()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(item);
+    }
+  }
+  return list;
+}
+
+export const tracks = deduplicateCatalog([...BASE_TRACKS, ...MEGA_HITS]);
 
 export const MUSIC_CATEGORIES = [
   { id: 'kpop_all', label: '🇰🇷 K-Pop 전체', desc: '최신 아이돌부터 레트로 명곡까지 K-Pop 전체 출제' },

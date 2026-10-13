@@ -31,14 +31,26 @@ export function createTrackProvider(baseUrl, options = {}) {
         }
       }
 
-      // Dynamic real-time theme mapping for all 8 categories
+      // 1. Guaranteed iconic mega-hit categories:
+      // Always draw from the curated verified hits pool (100% universal fame, no obscure tracks)
+      const isCuratedHitCategory = ['kpop_hits', 'kpop_retro', 'pop_hits', 'jpop_hits'].includes(musicSource);
+      if (isCuratedHitCategory) {
+        const matchingHits = catalog.filter(t => t.category === musicSource);
+        const hitPool = deduplicateTracks(matchingHits.map(t => ({ ...t })));
+        // Random shuffle every game so match order and selection is always fresh
+        for (let i = hitPool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [hitPool[i], hitPool[j]] = [hitPool[j], hitPool[i]];
+        }
+        await enrichTracksMetadata(hitPool);
+        return hitPool;
+      }
+
+      // 2. Broad genre & random categories (kpop_all, pop_all, jpop_all, spotify_random):
+      // Combine curated hits with live Spotify seeds (clean seeds with promo/rising removed)
       const categoryGenreMap = {
-        kpop_hits: ['kpop_hits'],
-        kpop_retro: ['kpop_retro'],
         kpop_all: ['kpop_all'],
-        pop_hits: ['pop_hits'],
         pop_all: ['pop_all'],
-        jpop_hits: ['jpop_hits'],
         jpop_all: ['jpop_all'],
         spotify_random: options.preferredGenres?.length ? options.preferredGenres : ['spotify_random'],
       };
@@ -52,16 +64,36 @@ export function createTrackProvider(baseUrl, options = {}) {
             options.userToken,
             categoryGenreMap[musicSource]
           );
-          if (spotifyGenreTracks && spotifyGenreTracks.length >= 8) {
-            await enrichTracksMetadata(spotifyGenreTracks);
-            return spotifyGenreTracks;
+
+          // Get language-specific curated hits to ensure hits are always present in the pool
+          let baseCatalogHits = [];
+          if (musicSource === 'kpop_all') {
+            baseCatalogHits = catalog.filter(t => ['kpop_hits', 'kpop_retro'].includes(t.category));
+          } else if (musicSource === 'pop_all') {
+            baseCatalogHits = catalog.filter(t => t.category === 'pop_hits');
+          } else if (musicSource === 'jpop_all') {
+            baseCatalogHits = catalog.filter(t => t.category === 'jpop_hits');
+          }
+
+          const combined = deduplicateTracks([
+            ...baseCatalogHits.map(t => ({ ...t })),
+            ...(spotifyGenreTracks || []),
+          ]);
+
+          if (combined.length >= 8) {
+            for (let i = combined.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [combined[i], combined[j]] = [combined[j], combined[i]];
+            }
+            await enrichTracksMetadata(combined);
+            return combined;
           }
         } catch (err) {
           console.warn(`Spotify dynamic ${musicSource} fetch fallback:`, err.message);
         }
       }
 
-      // Resilient Fallback to catalog if Spotify is unreachable (enriches with HTTPS audio)
+      // 3. Resilient Fallback to catalog if Spotify is unreachable (enriches with HTTPS audio)
       const filtered = catalog.filter(t => {
         if (musicSource === 'kpop_hits') return t.category === 'kpop_hits';
         if (musicSource === 'kpop_retro') return t.category === 'kpop_retro';
