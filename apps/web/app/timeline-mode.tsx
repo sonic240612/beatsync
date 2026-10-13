@@ -450,7 +450,10 @@ export default function TimelineMode() {
         preload="none"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setAudioEnded(true);
+        }}
       />
 
       {/* Header Info */}
