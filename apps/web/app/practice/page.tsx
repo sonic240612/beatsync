@@ -148,9 +148,11 @@ export default function PracticePage() {
       {/* Floating Header */}
       <header data-liquid-surface className="liquid-glass-pill sticky top-4 z-40 mb-8 flex items-center justify-between px-5 py-3 sm:px-7 sm:py-4">
         <a href="/" className="flex items-center gap-2.5 text-decoration-none">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 text-slate-950 font-black shadow-md">
-            BS
-          </div>
+          <img
+            src="/icon.svg"
+            alt="BeatSync"
+            className="h-9 w-9 rounded-xl shadow-md shrink-0 object-contain"
+          />
           <div>
             <h1 className="text-lg font-black tracking-tight sm:text-xl">
               Beat<span className="text-emerald-400">Sync</span>

@@ -6,6 +6,13 @@ import { ToastContainer } from '@/components/toast-container';
 export const metadata: Metadata = {
   title: 'BeatSync (비트싱크) · 실시간 음악 퀴즈 & 타임라인 파티 게임',
   description: 'Spotify 무료 계정 지원 실시간 음악 퀴즈 & 발매연도 타임라인 파티 게임',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
