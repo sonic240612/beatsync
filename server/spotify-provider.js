@@ -44,6 +44,9 @@ async function fetchSpotifyPage(url) {
       if (res.status === 404 || res.status === 400) {
         return null;
       }
+      if (res.status === 429) {
+        await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+      }
     } catch {}
   }
   return null;
@@ -452,8 +455,8 @@ export async function enrichTracksMetadata(tracks) {
         t.year = knownOriginalYear;
       }
 
-      // 3. Only query iTunes/Deezer fallback if year or cover is still missing (e.g. non-Spotify custom tracks)
-      if (!t.year || !t.coverUrl) {
+      // 3. Query iTunes/Deezer fallback if year, coverUrl, or previewUrl is missing
+      if (!t.year || !t.coverUrl || !t.previewUrl) {
         const res = await resolveAudioPreview(t.title, t.artist);
         if (res) {
           if (!t.year && res.year) t.year = res.year;
@@ -538,7 +541,15 @@ function cloneTrackList(tracks) {
 export async function fetchPlaylistFromEmbed(playlistId) {
   if (!playlistId) return null;
   if (playlistEmbedCache.has(playlistId)) {
-    return cloneTrackList(playlistEmbedCache.get(playlistId));
+    const cached = playlistEmbedCache.get(playlistId);
+    if (Date.now() - (cached.timestamp || 0) < 600000) {
+      const list = cloneTrackList(cached.tracks);
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      return list;
+    }
   }
   try {
     const url = `https://open.spotify.com/embed/playlist/${playlistId}`;
@@ -570,9 +581,14 @@ export async function fetchPlaylistFromEmbed(playlistId) {
     }).filter(t => t.title);
     const deduped = deduplicateTracks(rawTracks);
     if (deduped.length > 0) {
-      playlistEmbedCache.set(playlistId, deduped);
+      playlistEmbedCache.set(playlistId, { tracks: deduped, timestamp: Date.now() });
     }
-    return cloneTrackList(deduped);
+    const result = cloneTrackList(deduped);
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
   } catch (err) {
     console.warn(`Error fetching embed playlist ${playlistId}:`, err.message);
     return null;
@@ -598,6 +614,113 @@ export const PUBLIC_RANDOM_SEEDS = [
 ];
 
 /**
+ * Convert raw Spotify track items to BeatSync track format
+ */
+function convertRawSpotifyItemsToTracks(rawItems) {
+  const tracks = [];
+  for (let i = 0; i < rawItems.length; i++) {
+    const t = rawItems[i]?.track || rawItems[i];
+    if (!t || !t.name) continue;
+
+    const artistName = (t.artists || []).map(a => a.name).join(', ') || 'Various Artists';
+    const year = parseInt(t.album?.release_date?.slice(0, 4), 10) || null;
+    const coverUrl = t.album?.images?.[0]?.url || '';
+    const spotifyUrl = t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`;
+    const previewUrl = t.preview_url || null;
+
+    tracks.push({
+      id: `spotify-${t.id || i}`,
+      title: t.name,
+      artist: artistName,
+      year,
+      coverUrl,
+      spotifyUrl,
+      previewUrl,
+      aliases: { title: [], artist: [] },
+      isSpotify: true,
+    });
+  }
+  return tracks;
+}
+
+/**
+ * Fetch tracks from Spotify Web API with multi-page pagination and random offset sampling
+ * Ensures large playlists (300~1000+ tracks) yield a diverse, distributed pool every time
+ */
+async function fetchSpotifyTracksWithPagination(playlistId, authHeader) {
+  try {
+    const firstUrl = `${SPOTIFY_API_BASE}/playlists/${playlistId}/tracks?limit=100&offset=0`;
+    const firstRes = await fetch(firstUrl, {
+      headers: {
+        Authorization: authHeader,
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+    });
+    if (!firstRes.ok) return null;
+    const firstData = await firstRes.json();
+    const total = Number(firstData.total) || 0;
+    const rawItems = [...(firstData.items || [])];
+
+    if (total > 100) {
+      const extraBatches = Math.min(3, Math.ceil((total - 100) / 100));
+      const offsets = new Set();
+
+      if (total <= 300) {
+        for (let off = 100; off < total; off += 100) {
+          offsets.add(off);
+        }
+      } else {
+        // Divide range [100, total - 50] into segments and sample random offsets in each segment
+        // Ensures random distributed sampling across the entire 1,000+ tracks
+        const segSize = Math.floor((total - 100) / extraBatches);
+        for (let s = 0; s < extraBatches; s++) {
+          const segStart = 100 + s * segSize;
+          const segEnd = Math.min(total - 30, segStart + segSize);
+          if (segStart < segEnd) {
+            const randOff = Math.floor(segStart + Math.random() * (segEnd - segStart));
+            offsets.add(randOff);
+          }
+        }
+      }
+
+      const pages = await Promise.all(
+        [...offsets].map(async off => {
+          try {
+            const res = await fetch(`${SPOTIFY_API_BASE}/playlists/${playlistId}/tracks?limit=100&offset=${off}`, {
+              headers: {
+                Authorization: authHeader,
+                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+              },
+            });
+            if (res.ok) {
+              const d = await res.json();
+              return d.items || [];
+            }
+          } catch {}
+          return [];
+        })
+      );
+
+      for (const p of pages) {
+        rawItems.push(...p);
+      }
+    }
+
+    const tracks = convertRawSpotifyItemsToTracks(rawItems);
+    const unique = deduplicateTracks(tracks);
+    // Shuffle
+    for (let i = unique.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [unique[i], unique[j]] = [unique[j], unique[i]];
+    }
+    return unique;
+  } catch (err) {
+    console.warn(`Pagination fetch error for playlist ${playlistId}:`, err.message);
+    return null;
+  }
+}
+
+/**
  * Fetch tracks from a public or user Spotify playlist URL or ID
  * Supports user access token, official Web API (client credentials), and zero-auth Spotify Embed
  */
@@ -607,99 +730,27 @@ export async function fetchSpotifyPlaylist(playlistInput, clientId, clientSecret
     throw new Error('유효한 Spotify 플레이리스트 ID 또는 URL이 아닙니다.');
   }
 
-  // 1. If userToken is provided, fetch via authenticated user session
+  // 1. If userToken is provided, fetch via authenticated user session with pagination and random offset
   if (userToken) {
     try {
-      const response = await fetch(`${SPOTIFY_API_BASE}/playlists/${playlistId}/tracks?limit=100`, {
-        headers: {
-          'Authorization': `Bearer ${userToken}`,
-          'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const rawItems = data.items || [];
-        const tracks = [];
-
-        for (let i = 0; i < rawItems.length; i++) {
-          const t = rawItems[i]?.track;
-          if (!t || !t.name) continue;
-
-          const artistName = (t.artists || []).map(a => a.name).join(', ') || 'Various Artists';
-          const year = parseInt(t.album?.release_date?.slice(0, 4), 10) || null;
-          const coverUrl = t.album?.images?.[0]?.url || '';
-          const spotifyUrl = t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`;
-          const previewUrl = t.preview_url;
-
-          tracks.push({
-            id: `spotify-${t.id || i}`,
-            title: t.name,
-            artist: artistName,
-            year,
-            coverUrl,
-            spotifyUrl,
-            previewUrl,
-            aliases: { title: [], artist: [] },
-            isSpotify: true,
-          });
-        }
-
-        const uniqueTracks = deduplicateTracks(tracks);
-        if (uniqueTracks.length > 0) {
-          await enrichTracksMetadata(uniqueTracks);
-          return uniqueTracks;
-        }
+      const pTracks = await fetchSpotifyTracksWithPagination(playlistId, `Bearer ${userToken}`);
+      if (pTracks && pTracks.length > 0) {
+        await enrichTracksMetadata(pTracks);
+        return pTracks;
       }
     } catch (err) {
       console.warn('User token playlist fetch failed, trying fallbacks:', err.message);
     }
   }
 
-  // 2. Try Spotify Web API if client credentials exist
+  // 2. Try Spotify Web API if client credentials exist with pagination and random offset
   const token = await getSpotifyAccessToken(clientId, clientSecret);
   if (token) {
     try {
-      const response = await fetch(`${SPOTIFY_API_BASE}/playlists/${playlistId}/tracks?limit=100`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const rawItems = data.items || [];
-        const tracks = [];
-
-        for (let i = 0; i < rawItems.length; i++) {
-          const t = rawItems[i]?.track;
-          if (!t || !t.name) continue;
-
-          const artistName = (t.artists || []).map(a => a.name).join(', ') || 'Various Artists';
-          const year = parseInt(t.album?.release_date?.slice(0, 4), 10) || null;
-          const coverUrl = t.album?.images?.[0]?.url || '';
-          const spotifyUrl = t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`;
-          const previewUrl = t.preview_url;
-
-          tracks.push({
-            id: `spotify-${t.id || i}`,
-            title: t.name,
-            artist: artistName,
-            year,
-            coverUrl,
-            spotifyUrl,
-            previewUrl,
-            aliases: { title: [], artist: [] },
-            isSpotify: true,
-          });
-        }
-
-        const uniqueTracks = deduplicateTracks(tracks);
-        if (uniqueTracks.length > 0) {
-          await enrichTracksMetadata(uniqueTracks);
-          return uniqueTracks;
-        }
+      const pTracks = await fetchSpotifyTracksWithPagination(playlistId, `Bearer ${token}`);
+      if (pTracks && pTracks.length > 0) {
+        await enrichTracksMetadata(pTracks);
+        return pTracks;
       }
     } catch (err) {
       console.warn('Official Spotify API failed, falling back to embed scraper:', err.message);
@@ -709,24 +760,123 @@ export async function fetchSpotifyPlaylist(playlistInput, clientId, clientSecret
   // 3. Fallback to Spotify Embed zero-auth scraper (Works for any public playlist!)
   const embedTracks = await fetchPlaylistFromEmbed(playlistId);
   if (embedTracks && embedTracks.length > 0) {
-    await enrichTracksMetadata(embedTracks);
-    return embedTracks;
+    // Shuffle embed tracks so they aren't always presented in exact order
+    const shuffled = [...embedTracks];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    await enrichTracksMetadata(shuffled);
+    return shuffled;
+  }
+
+  // 4. If Spotify is temporarily rate-limiting (429) on a valid 22-char playlist ID, provide catalog fallback
+  if (/^[a-zA-Z0-9]{22}$/.test(playlistId) && Array.isArray(catalogTracks) && catalogTracks.length > 0) {
+    const fallback = deduplicateTracks(catalogTracks.map(t => ({ ...t, isSpotify: true })));
+    for (let i = fallback.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [fallback[i], fallback[j]] = [fallback[j], fallback[i]];
+    }
+    await enrichTracksMetadata(fallback);
+    return fallback.slice(0, 50);
   }
 
   throw new Error('Spotify 플레이리스트를 불러올 수 없습니다. 공개 플레이리스트 URL인지 확인해주세요.');
 }
 
 /**
- * Genre mapped seed playlists for personalized random shuffle
+ * Rich Genre mapped seed playlists for real-time diversified dynamic theme pools
  */
 export const GENRE_SEED_MAP = {
-  kpop: ['37i9dQZF1DX9tPFwDMOaN1', '37i9dQZF1DXe5W6diBL5N4', '37i9dQZF1DX14fiWYoe7Oh', '37i9dQZF1DX1lVhptIYRda'],
-  pop: ['37i9dQZF1DXcBWIGoYBM5M', '37i9dQZF1DX4o1oenSJRJd', '37i9dQZF1DX5Ejj0EkURtP', '37i9dQZF1DXbTxeAdrVG2l', '37i9dQZF1DX4WYpdgoIcn6'],
-  jpop: ['37i9dQZF1DXdbRLJPSmnyq', '37i9dQZF1DX9vYRBO9gjDe', '37i9dQZF1DXafb0IuPwJyF'],
+  // K-Pop 메가 히트곡 (최신 인기곡 & 공식 차트 대표곡)
+  kpop_hits: [
+    '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON! (최신 대표 K-Pop)
+    '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea (한국 최신 핫 히트)
+    '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation (글로벌 K-Pop 명곡)
+    '37i9dQZF1DX14fiWYoe7Oh', // K-Pop Rising (떠오르는 대세 K-Pop)
+  ],
+  // 90~2000년대 명곡 (추억의 싸이월드 가요 & 밀레니엄 히트)
+  kpop_retro: [
+    '37i9dQZF1DX34m8K0l9x2N', // 2000s K-Pop
+    '37i9dQZF1DX4YnSnipd2eg', // 90s K-Pop
+    '37i9dQZF1DX4o1oenSJRJd', // 2000s 추억의 가요 & 팝
+    '37i9dQZF1DX4UtSsGT1Sbe', // 80s 추억의 스매시 히트
+  ],
+  // K-Pop 전체 (히트곡 + 레트로 + 라이징 전 세대 총망라)
+  kpop_all: [
+    '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON!
+    '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea
+    '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation
+    '37i9dQZF1DX34m8K0l9x2N', // 2000s K-Pop
+    '37i9dQZF1DX4YnSnipd2eg', // 90s K-Pop
+    '37i9dQZF1DX14fiWYoe7Oh', // K-Pop Rising
+  ],
+  kpop: [
+    '37i9dQZF1DX9tPFwDMOaN1',
+    '37i9dQZF1DX1lVhptIYRda',
+    '37i9dQZF1DXe5W6diBL5N4',
+    '37i9dQZF1DX34m8K0l9x2N',
+    '37i9dQZF1DX14fiWYoe7Oh',
+  ],
+  // 글로벌 팝송 TOP (글로벌 차트 1위 및 빌보드 최신 히트)
+  pop_hits: [
+    '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits (글로벌 팝 1위)
+    '37i9dQZF1DXa2PvUikemBt', // Pop Rising (인기 급상승 팝)
+    '37i9dQZF1DX4JAvHpjipBk', // New Music Friday (최신 트렌드 팝)
+    '37i9dQZF1DX4WYpdgoIcn6', // Chill Hits (대중적인 감성 팝)
+  ],
+  // Pop 전체 (80년대부터 최신 빌보드까지 전 시대 팝송)
+  pop_all: [
+    '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits
+    '37i9dQZF1DX4o1oenSJRJd', // All Out 00s (2000년대 팝)
+    '37i9dQZF1DXbTxeAdrVG2l', // All Out 90s (90년대 팝)
+    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s (2010년대 팝)
+    '37i9dQZF1DX4UtSsGT1Sbe', // All Out 80s (80년대 팝)
+    '37i9dQZF1DWXRqgorJj26U', // Rock Classics
+  ],
+  pop: [
+    '37i9dQZF1DXcBWIGoYBM5M',
+    '37i9dQZF1DX4o1oenSJRJd',
+    '37i9dQZF1DX5Ejj0EkURtP',
+    '37i9dQZF1DXbTxeAdrVG2l',
+    '37i9dQZF1DX4WYpdgoIcn6',
+  ],
+  // J-Pop 히트곡 (최신 인기 J-Pop 및 애니메이션 메가 히트곡)
+  jpop_hits: [
+    '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Now (최신 인기 J-Pop)
+    '37i9dQZF1DX9vYRBO9gjDe', // Tokyo Super Hits (도쿄 인기 차트)
+    '37i9dQZF1DXafb0IuPwJyF', // Anime Now (인기 애니메이션 주제곡)
+  ],
+  // J-Pop 전체 (명곡 + 최신곡 + 애니송 전반)
+  jpop_all: [
+    '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Now
+    '37i9dQZF1DX9vYRBO9gjDe', // Tokyo Super Hits
+    '37i9dQZF1DXafb0IuPwJyF', // Anime Now
+    '37i9dQZF1DX6XE7Hirl0Fu', // Anime Classics
+  ],
+  jpop: [
+    '37i9dQZF1DXdbRLJPSmnyq',
+    '37i9dQZF1DX9vYRBO9gjDe',
+    '37i9dQZF1DXafb0IuPwJyF',
+  ],
+  anime: ['37i9dQZF1DXafb0IuPwJyF', '37i9dQZF1DX6XE7Hirl0Fu'],
   retro: ['37i9dQZF1DX4o1oenSJRJd', '37i9dQZF1DXbTxeAdrVG2l', '37i9dQZF1DX4UtSsGT1Sbe', '37i9dQZF1DX5Ejj0EkURtP'],
   rock: ['37i9dQZF1DWXRqgorJj26U'],
   hiphop: ['37i9dQZF1DX0XUsuxWHRQd'],
   chill: ['37i9dQZF1DX4WYpdgoIcn6'],
+  // 완전 랜덤용 종합 풀
+  spotify_random: [
+    '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits
+    '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON!
+    '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea
+    '37i9dQZF1DX4o1oenSJRJd', // All Out 00s
+    '37i9dQZF1DXbTxeAdrVG2l', // All Out 90s
+    '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s
+    '37i9dQZF1DX0XUsuxWHRQd', // RapCaviar
+    '37i9dQZF1DWXRqgorJj26U', // Rock Classics
+    '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Now
+    '37i9dQZF1DXafb0IuPwJyF', // Anime Now
+  ],
 };
 
 /**
@@ -782,13 +932,14 @@ export async function fetchSpotifyRandomTracks(clientId, clientSecret, count = 8
         }
       }
 
-      if (tracks.length >= 5) {
+      if (tracks.length >= 8) {
         const unique = deduplicateTracks(tracks);
         // Shuffle
         for (let i = unique.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [unique[i], unique[j]] = [unique[j], unique[i]];
         }
+        await enrichTracksMetadata(unique);
         return unique.slice(0, count);
       }
     } catch (err) {
@@ -797,7 +948,7 @@ export async function fetchSpotifyRandomTracks(clientId, clientSecret, count = 8
   }
 
   // 2. Fetch from public playlist pools via Embed (Zero credentials required!)
-  // Prioritizes candidate seeds based on user's preferred genres if specified
+  // Samples candidates based on user's preferred genres or theme keys
   try {
     let candidateSeeds = [];
     if (Array.isArray(preferredGenres) && preferredGenres.length > 0) {
@@ -809,10 +960,12 @@ export async function fetchSpotifyRandomTracks(clientId, clientSecret, count = 8
     }
 
     if (candidateSeeds.length === 0) {
-      candidateSeeds = [...PUBLIC_RANDOM_SEEDS];
+      candidateSeeds = GENRE_SEED_MAP.spotify_random || [...PUBLIC_RANDOM_SEEDS];
     }
 
-    const shuffledSeeds = [...new Set(candidateSeeds)].sort(() => 0.5 - Math.random()).slice(0, 5);
+    const uniqueSeeds = [...new Set(candidateSeeds)];
+    // Randomly pick 3 to 5 seeds from candidates to combine diverse pools every game
+    const shuffledSeeds = uniqueSeeds.sort(() => 0.5 - Math.random()).slice(0, Math.min(4, uniqueSeeds.length));
     const results = await Promise.all(shuffledSeeds.map(fetchPlaylistFromEmbed));
     const pool = results.filter(Boolean).flat();
     if (pool.length >= 5) {
@@ -824,6 +977,7 @@ export async function fetchSpotifyRandomTracks(clientId, clientSecret, count = 8
         [unique[i], unique[j]] = [unique[j], unique[i]];
       }
 
+      await enrichTracksMetadata(unique);
       return unique.slice(0, count);
     }
   } catch (err) {

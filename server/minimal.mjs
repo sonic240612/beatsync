@@ -212,16 +212,19 @@ io.on('connection', (socket) => {
 
     const source = room.settings.musicSource || 'kpop_hits';
     if (source === 'spotify_playlist') {
-      if (!room.customTracks || room.customTracks.length === 0) {
-        if (room.settings.playlistUrl) {
-          const tracks = await fetchSpotifyPlaylist(room.settings.playlistUrl, undefined, undefined, room.settings.spotifyUserToken);
-          if (!tracks || tracks.length === 0) {
+      if (room.settings.playlistUrl) {
+        try {
+          const freshTracks = await fetchSpotifyPlaylist(room.settings.playlistUrl, undefined, undefined, room.settings.spotifyUserToken);
+          if (freshTracks && freshTracks.length > 0) {
+            room.customTracks = freshTracks;
+          }
+        } catch (e) {
+          if (!room.customTracks || room.customTracks.length === 0) {
             throw Error('Spotify 플레이리스트를 불러올 수 없습니다. 공개 플레이리스트 URL인지 확인해주세요.');
           }
-          room.customTracks = tracks;
-        } else {
-          throw Error('Spotify 플레이리스트 URL을 입력하고 [적용] 버튼을 눌러주세요.');
         }
+      } else {
+        throw Error('Spotify 플레이리스트 URL을 입력하고 [적용] 버튼을 눌러주세요.');
       }
     }
 

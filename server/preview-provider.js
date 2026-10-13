@@ -14,80 +14,6 @@ export function createTrackProvider(baseUrl, options = {}) {
         return uniqueCustom.map(t => ({ ...t }));
       }
 
-      const genreMap = {
-        kpop_all: {
-          genreKey: 'kpop',
-          categories: ['kpop_hits', 'kpop_retro', 'kpop_all'],
-        },
-        pop_all: {
-          genreKey: 'pop',
-          categories: ['pop_hits', 'pop_all'],
-        },
-        jpop_all: {
-          genreKey: 'jpop',
-          categories: ['jpop_hits', 'jpop_all'],
-        },
-      };
-
-      if (genreMap[musicSource]) {
-        const { genreKey, categories } = genreMap[musicSource];
-        const baseCatalogTracks = catalog
-          .filter(t => categories.includes(t.category))
-          .map(t => ({ ...t }));
-
-        let combined = [...baseCatalogTracks];
-        try {
-          const spotifyGenreTracks = await fetchSpotifyRandomTracks(
-            options.clientId,
-            options.clientSecret,
-            60,
-            null,
-            [genreKey]
-          );
-          if (spotifyGenreTracks.length >= 5) {
-            await enrichTracksMetadata(spotifyGenreTracks);
-            combined = deduplicateTracks([...baseCatalogTracks, ...spotifyGenreTracks]);
-          } else {
-            combined = deduplicateTracks(baseCatalogTracks);
-          }
-        } catch (err) {
-          console.warn(`Spotify ${musicSource} fetch fallback to catalog:`, err.message);
-          combined = deduplicateTracks(baseCatalogTracks);
-        }
-
-        for (let i = combined.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [combined[i], combined[j]] = [combined[j], combined[i]];
-        }
-        return combined;
-      }
-
-      if (musicSource === 'spotify_random') {
-        try {
-          const spotifyRandomTracks = await fetchSpotifyRandomTracks(
-            options.clientId,
-            options.clientSecret,
-            80,
-            options.userToken,
-            options.preferredGenres
-          );
-          if (spotifyRandomTracks.length >= 5) {
-            await enrichTracksMetadata(spotifyRandomTracks);
-            return spotifyRandomTracks;
-          }
-        } catch (err) {
-          console.warn('Spotify random fetch fallback to catalog shuffle:', err.message);
-        }
-
-        // Complete random shuffle across all catalog tracks
-        const allTracks = deduplicateTracks(catalog.map(t => ({ ...t })));
-        for (let i = allTracks.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [allTracks[i], allTracks[j]] = [allTracks[j], allTracks[i]];
-        }
-        return allTracks;
-      }
-
       if (musicSource === 'spotify_playlist' && options.playlistUrl) {
         try {
           const spotifyTracks = await fetchSpotifyPlaylist(
@@ -96,7 +22,7 @@ export function createTrackProvider(baseUrl, options = {}) {
             options.clientSecret,
             options.userToken
           );
-          if (spotifyTracks.length) {
+          if (spotifyTracks && spotifyTracks.length > 0) {
             await enrichTracksMetadata(spotifyTracks);
             return spotifyTracks;
           }
@@ -105,13 +31,54 @@ export function createTrackProvider(baseUrl, options = {}) {
         }
       }
 
-      const filtered = catalog.filter(t => t.category === musicSource);
-      if (filtered.length) {
-        return filtered.map(t => ({ ...t }));
+      // Dynamic real-time theme mapping for all 8 categories
+      const categoryGenreMap = {
+        kpop_hits: ['kpop_hits'],
+        kpop_retro: ['kpop_retro'],
+        kpop_all: ['kpop_all'],
+        pop_hits: ['pop_hits'],
+        pop_all: ['pop_all'],
+        jpop_hits: ['jpop_hits'],
+        jpop_all: ['jpop_all'],
+        spotify_random: options.preferredGenres?.length ? options.preferredGenres : ['spotify_random'],
+      };
+
+      if (categoryGenreMap[musicSource]) {
+        try {
+          const spotifyGenreTracks = await fetchSpotifyRandomTracks(
+            options.clientId,
+            options.clientSecret,
+            120,
+            options.userToken,
+            categoryGenreMap[musicSource]
+          );
+          if (spotifyGenreTracks && spotifyGenreTracks.length >= 8) {
+            await enrichTracksMetadata(spotifyGenreTracks);
+            return spotifyGenreTracks;
+          }
+        } catch (err) {
+          console.warn(`Spotify dynamic ${musicSource} fetch fallback:`, err.message);
+        }
       }
 
-      // Default: full catalog
-      return catalog.map(t => ({ ...t }));
+      // Resilient Fallback to catalog if Spotify is unreachable (enriches with HTTPS audio)
+      const filtered = catalog.filter(t => {
+        if (musicSource === 'kpop_hits') return t.category === 'kpop_hits';
+        if (musicSource === 'kpop_retro') return t.category === 'kpop_retro';
+        if (musicSource === 'kpop_all') return ['kpop_hits', 'kpop_retro', 'kpop_all'].includes(t.category);
+        if (musicSource === 'pop_hits') return t.category === 'pop_hits';
+        if (musicSource === 'pop_all') return ['pop_hits', 'pop_all'].includes(t.category);
+        if (musicSource === 'jpop_hits') return t.category === 'jpop_hits';
+        if (musicSource === 'jpop_all') return ['jpop_hits', 'jpop_all'].includes(t.category);
+        return true;
+      });
+      const fallbackList = deduplicateTracks((filtered.length ? filtered : catalog).map(t => ({ ...t })));
+      await enrichTracksMetadata(fallbackList);
+      for (let i = fallbackList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fallbackList[i], fallbackList[j]] = [fallbackList[j], fallbackList[i]];
+      }
+      return fallbackList;
     },
     getPreview: (track, startSeconds = 0) => {
       if (track.previewUrl) {
