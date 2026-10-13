@@ -194,11 +194,273 @@ export async function getSpotifyAccessToken(clientId, clientSecret) {
   }
 }
 
+function normalizeForMatch(str) {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/[()[\]{}'"`.,~!?@#$%^&*_\-+=/\\:;|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function cleanTrackTitle(title) {
+  return String(title || '')
+    .replace(/\s*[-–—]\s*(?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|radio edit|original mix|mono|stereo|deluxe|version).*$/i, '')
+    .replace(/\s*[\(\[](?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|mono|stereo|deluxe|feat\.?.*|ft\.?.*|cv\.?.*)[\)\]]/gi, '')
+    .trim();
+}
+
+/**
+ * Check if a track is a karaoke, instrumental, backing track, tribute, or unwanted cover version
+ */
+export function isKaraokeOrUnwantedTrack(title, artist = '', album = '') {
+  const t = String(title || '').toLowerCase();
+  const a = String(artist || '').toLowerCase();
+  const alb = String(album || '').toLowerCase();
+  const combined = `${t} ${a} ${alb}`;
+
+  // 1. Karaoke / Instrumental / Backing / Tribute keywords
+  const unwantedPatterns = [
+    /\b(?:karaoke|backing track|tribute band|tribute to|in the style of|originally performed by|made famous by|play-along|sing-along|medley)\b/i,
+    /\b(?:instrumental|inst|inst\.|mr|off vocal|no lead vocal|backing vocals)\b/i,
+    /[([](?:mr|inst|instrumental|karaoke|반주|가라오케|off vocal|piano version|acoustic cover|lullaby version)[)\]]/i,
+    /(?:가라오케|노래방\s*버전|반주\s*버전|엠알)/i,
+    /(?:オルゴール|カラオケ|オフボーカル|インスト)/i,
+  ];
+
+  for (const pat of unwantedPatterns) {
+    if (pat.test(t) || pat.test(a) || pat.test(alb)) return true;
+  }
+
+  // 2. Known karaoke / tribute / generic cover publishers
+  const karaokePublishers = [
+    /\b(?:karaoke|sing king|party tyme|ameritz|the karaoke channel|hit crew|tribute players|karaoke version|karaoke all stars|lullaby players|piano tribute players|cover pop|acoustic cover|string quartet|sleep baby sleep)\b/i,
+    /(?:가라오케|노래방|금영|태진)/i,
+  ];
+  for (const pat of karaokePublishers) {
+    if (pat.test(a)) return true;
+  }
+
+  // 3. Sound effects, noise, meditation
+  const noisePatterns = [
+    /\b(?:white noise|rain sounds|nature sounds|sound effect|meditation|sleep music)\b/i,
+  ];
+  for (const pat of noisePatterns) {
+    if (pat.test(combined)) return true;
+  }
+
+  return false;
+}
+
+export function isArtistMatching(expectedArtist, candidateArtist) {
+  if (!expectedArtist || !candidateArtist) return false;
+  const normExp = normalizeForMatch(expectedArtist);
+  const normCand = normalizeForMatch(candidateArtist);
+  if (!normExp || !normCand) return false;
+
+  if (normExp === normCand) return true;
+  if (normExp.includes(normCand) || normCand.includes(normExp)) return true;
+
+  const expParts = expectedArtist.toLowerCase().split(/[,&/×・+]/).map(s => normalizeForMatch(s)).filter(Boolean);
+  const candParts = candidateArtist.toLowerCase().split(/[,&/×・+]/).map(s => normalizeForMatch(s)).filter(Boolean);
+  for (const ep of expParts) {
+    if (candParts.some(cp => cp === ep || cp.includes(ep) || ep.includes(cp))) return true;
+  }
+
+  const aliasMap = {
+    'bts': ['방탄소년단', 'bangtan'],
+    '방탄소년단': ['bts', 'bangtan'],
+    'iu': ['아이유'],
+    '아이유': ['iu'],
+    'snsd': ['소녀시대', 'girls generation'],
+    '소녀시대': ['snsd', 'girls generation'],
+    'twice': ['트와이스'],
+    '트와이스': ['twice'],
+    'blackpink': ['블랙핑크'],
+    '블랙핑크': ['blackpink'],
+    'exo': ['엑소'],
+    '엑소': ['exo'],
+    'red velvet': ['레드벨벳'],
+    '레드벨벳': ['red velvet'],
+    'aespa': ['에스파'],
+    '에스파': ['aespa'],
+    'ive': ['아이브'],
+    '아이브': ['ive'],
+    'newjeans': ['뉴진스'],
+    '뉴진스': ['newjeans'],
+    'le sserafim': ['르세라핌'],
+    '르세라핌': ['le sserafim'],
+    'taeyeon': ['태연'],
+    '태연': ['taeyeon'],
+    'akmu': ['악뮤', '악동뮤지션'],
+    '악뮤': ['akmu'],
+    '악동뮤지션': ['akmu'],
+    'bigbang': ['빅뱅'],
+    '빅뱅': ['bigbang'],
+    'shinee': ['샤이니'],
+    '샤이니': ['shinee'],
+    'seventeen': ['세븐틴'],
+    '세븐틴': ['seventeen'],
+    'stray kids': ['스트레이 키즈'],
+    '스트레이 키즈': ['stray kids'],
+    'day6': ['데이식스'],
+    '데이식스': ['day6'],
+    'g idle': ['여자아이들', '아이들', 'gidle', 'i-dle'],
+    '여자아이들': ['g idle', 'gidle', 'i-dle'],
+    'psy': ['싸이'],
+    '싸이': ['psy'],
+    'yb': ['윤도현', '윤도현밴드', 'yoon do hyun'],
+    '윤도현': ['yb', '윤도현밴드'],
+    'buzz': ['버즈'],
+    '버즈': ['buzz'],
+    'sg wannabe': ['sg워너비'],
+    'sg워너비': ['sg wannabe'],
+  };
+  for (const [k, vList] of Object.entries(aliasMap)) {
+    if (normExp.includes(k) && vList.some(v => normCand.includes(v))) return true;
+    if (normCand.includes(k) && vList.some(v => normExp.includes(v))) return true;
+  }
+
+  return false;
+}
+
+const KNOWN_TITLE_TRANSLATIONS = {
+  '좋은 날': ['good day'],
+  '어디에도': ['no matter where'],
+  '너랑 나': ['you & i', 'you and i'],
+  '분홍신': ['the red shoes'],
+  '밤편지': ['through the night'],
+  '팔레트': ['palette'],
+  '소주 한 잔': ['a glass of soju', 'a shot of soju'],
+  '서쪽 하늘': ['western sky'],
+  '인연': ['fate'],
+  '희재': ['hee jae'],
+  '사랑했나봐': ['i think i loved you', 'i guess i loved you'],
+  '응급실': ['emergency room'],
+  '가시': ['thorn'],
+  '겁쟁이': ['coward'],
+  '나에게로 떠나는 여행': ['a travel to me'],
+  '체념': ['resignation'],
+  '벌써 일년': ['already one year'],
+  '점점': ['gradually'],
+  '눈의 꽃': ['snow flower'],
+  '다행이다': ['it is fortunate'],
+  '취중진담': ['truth in wine'],
+  '비와 당신': ['rain and you'],
+  '기억의 습작': ['etude of memories'],
+  '그대에게': ['to you'],
+  '붉은 노을': ['sunset glow'],
+  '거짓말': ['lies', 'lie'],
+  '하루하루': ['haru haru', 'day by day'],
+  '마지막 인사': ['last farewell'],
+  '뱅뱅뱅': ['bang bang bang'],
+  '판타스틱 베이비': ['fantastic baby'],
+  '루저': ['loser'],
+  '삐딱하게': ['crooked'],
+  '눈 코 입': ['eyes, nose, lips'],
+  '봄날': ['spring day'],
+  '작은 것들을 위한 시': ['boy with luv'],
+  '피 땀 눈물': ['blood sweat & tears', 'blood sweat and tears'],
+  '불타오르네': ['fire'],
+  '쩔어': ['dope'],
+  '우아하게': ['ooh-ahh', 'like ooh-ahh'],
+  '치어업': ['cheer up'],
+  '빨간 맛': ['red flavor'],
+  '음오아예': ['um oh ah yeh'],
+  '시간을 달려서': ['rough'],
+  '오늘부터 우리는': ['me gustas tu'],
+  '유리구슬': ['glass bead'],
+  '롤린': ['rollin', "rollin'"],
+  '사건의 지평선': ['event horizon'],
+  '스물다섯, 스물하나': ['twenty-five, twenty-one'],
+  '헤픈 우연': ['happen accident'],
+  '너의 의미': ['meaning of you'],
+  '금요일에 만나요': ['friday'],
+};
+
+export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []) {
+  if (!expectedTitle || !candidateTitle) return false;
+  const normExp = normalizeForMatch(cleanTrackTitle(expectedTitle));
+  const normCand = normalizeForMatch(cleanTrackTitle(candidateTitle));
+  if (!normExp || !normCand) return false;
+
+  if (normExp === normCand) return true;
+  if (normExp.includes(normCand) || normCand.includes(normExp)) return true;
+
+  const expWords = normExp.split(/\s+/).filter(w => w.length >= 2);
+  const candWords = normCand.split(/\s+/).filter(w => w.length >= 2);
+  const commonWords = expWords.filter(w => candWords.includes(w));
+  if (commonWords.length > 0 && commonWords.length >= Math.ceil(expWords.length * 0.5)) {
+    return true;
+  }
+
+  // Cross-lingual title translation check
+  for (const [kr, enList] of Object.entries(KNOWN_TITLE_TRANSLATIONS)) {
+    const normKr = normalizeForMatch(kr);
+    if (normExp.includes(normKr) || normKr.includes(normExp)) {
+      if (enList.some(en => normCand.includes(normalizeForMatch(en)) || normalizeForMatch(en).includes(normCand))) {
+        return true;
+      }
+    }
+  }
+
+  // Check extra aliases if provided
+  if (Array.isArray(extraAliases)) {
+    for (const a of extraAliases) {
+      const normA = normalizeForMatch(a);
+      if (normA && (normA === normCand || normCand.includes(normA) || normA.includes(normCand))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function selectBestCandidate(candidates, expectedTitle, expectedArtist, extraAliases = []) {
+  const valid = [];
+  const cleanExpTitle = cleanTrackTitle(expectedTitle);
+
+  for (const item of (candidates || [])) {
+    const trackName = item.trackName || item.title || '';
+    const artistName = item.artistName || item.artist?.name || '';
+    const albumName = item.collectionName || item.album?.title || '';
+    const previewUrl = item.previewUrl || item.preview || null;
+
+    if (!previewUrl) continue;
+    if (isKaraokeOrUnwantedTrack(trackName, artistName, albumName)) continue;
+    if (!isArtistMatching(expectedArtist, artistName)) continue;
+    if (!isTitleMatching(expectedTitle, trackName, extraAliases)) continue;
+
+    let score = 100;
+    const cleanCandTitle = cleanTrackTitle(trackName);
+
+    if (normalizeForMatch(cleanExpTitle) === normalizeForMatch(cleanCandTitle)) {
+      score += 60;
+    }
+    if (!/live/i.test(trackName)) {
+      score += 20;
+    }
+    if (!/remix|mix/i.test(trackName)) {
+      score += 15;
+    }
+    if (normalizeForMatch(expectedArtist) === normalizeForMatch(artistName)) {
+      score += 20;
+    }
+
+    valid.push({ item, score });
+  }
+
+  if (valid.length === 0) return null;
+  valid.sort((a, b) => b.score - a.score);
+  return valid[0].item;
+}
+
 /**
  * Resolve 30-second audio preview URL and album metadata using iTunes Search API (with Deezer fallback)
  * Free, fast, reliable fallback providing audio previews, high-res album artwork, and real release years
+ * Includes multi-candidate scoring and strict anti-karaoke/tribute validation
  */
-export async function resolveAudioPreview(title, artist) {
+export async function resolveAudioPreview(title, artist, extraAliases = []) {
   const cleanArtistInput = String(artist || '').replace(/\u00a0/g, ' ').trim();
   const cleanTitleInput = String(title || '').replace(/\u00a0/g, ' ').trim();
   const cacheKey = `${cleanArtistInput}:${cleanTitleInput}`.toLowerCase();
@@ -206,10 +468,7 @@ export async function resolveAudioPreview(title, artist) {
     return previewCache.get(cacheKey);
   }
 
-  const cleanTitle = cleanTitleInput
-    .replace(/\s*[-–—]\s*(?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|radio edit|original mix|mono|stereo|deluxe|version).*$/i, '')
-    .replace(/\s*[\(\[](?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|mono|stereo|deluxe|feat\.?.*|ft\.?.*|cv\.?.*)[\)\]]/gi, '')
-    .trim();
+  const cleanTitle = cleanTrackTitle(cleanTitleInput);
   const firstArtist = cleanArtistInput
     .replace(/\s*[\(\[（](?:cv\.?|feat\.?|ft\.?).*?[\)\]）]/gi, '')
     .split(/[,&/×・]/)[0]
@@ -222,24 +481,28 @@ export async function resolveAudioPreview(title, artist) {
     const countryParam = hasJapanese ? '&country=JP' : hasKorean ? '&country=KR' : '';
 
     const query = encodeURIComponent(`${cleanArtistInput} ${cleanTitleInput}`);
-    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1${countryParam}`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=8${countryParam}`);
     let item = null;
     if (res.ok) {
       const text = await res.text();
       if (text) {
-        const data = JSON.parse(text);
-        item = data.results?.[0];
+        try {
+          const data = JSON.parse(text);
+          item = selectBestCandidate(data.results, cleanTitleInput, cleanArtistInput, extraAliases);
+        } catch {}
       }
     }
 
-    // Retry with cleaned title and primary artist (or default US store) if initial query didn't find a match
-    if (!item && (cleanTitle !== cleanTitleInput || firstArtist !== cleanArtistInput || countryParam)) {
-      const retryRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(`${firstArtist} ${cleanTitle}`)}&entity=song&limit=1`);
+    // Retry with cleaned title and primary artist if initial query didn't find a match
+    if (!item) {
+      const retryRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(`${firstArtist} ${cleanTitle}`)}&entity=song&limit=8`);
       if (retryRes.ok) {
         const text = await retryRes.text();
         if (text) {
-          const retryData = JSON.parse(text);
-          item = retryData.results?.[0];
+          try {
+            const retryData = JSON.parse(text);
+            item = selectBestCandidate(retryData.results, cleanTitleInput, cleanArtistInput, extraAliases);
+          } catch {}
         }
       }
     }
@@ -259,13 +522,13 @@ export async function resolveAudioPreview(title, artist) {
     // Proceed to Deezer fallback
   }
 
-  // 2. Fallback to Deezer Search API (No API key needed, immune to iTunes rate-limits)
+  // 2. Fallback to Deezer Search API (strictly validated!)
   try {
     const q = encodeURIComponent(`${firstArtist} ${cleanTitle}`);
-    const deezerRes = await fetch(`https://api.deezer.com/search?q=${q}&limit=1`);
+    const deezerRes = await fetch(`https://api.deezer.com/search?q=${q}&limit=8`);
     if (deezerRes.ok) {
       const deezerData = await deezerRes.json();
-      const dItem = deezerData?.data?.[0];
+      const dItem = selectBestCandidate(deezerData?.data, cleanTitleInput, cleanArtistInput, extraAliases);
       if (dItem && (dItem.preview || dItem.album?.cover_xl || dItem.album?.cover_big)) {
         const knownYear = lookupKnownOriginalYear(cleanTitleInput, cleanArtistInput);
         const result = {
@@ -457,13 +720,17 @@ export async function enrichTracksMetadata(tracks) {
 
       // 3. Query iTunes/Deezer fallback if year, coverUrl, or previewUrl is missing
       if (!t.year || !t.coverUrl || !t.previewUrl) {
-        const res = await resolveAudioPreview(t.title, t.artist);
+        const res = await resolveAudioPreview(t.title, t.artist, t.aliases?.title);
         if (res) {
           if (!t.year && res.year) t.year = res.year;
           if (!t.coverUrl && res.artworkUrl) t.coverUrl = res.artworkUrl;
           if (!t.previewUrl && res.previewUrl) t.previewUrl = res.previewUrl;
-          if (res.altTitle && !t.aliases.title.includes(res.altTitle)) t.aliases.title.push(res.altTitle);
-          if (res.altArtist && !t.aliases.artist.includes(res.altArtist)) t.aliases.artist.push(res.altArtist);
+          if (res.altTitle && isTitleMatching(t.title, res.altTitle, t.aliases?.title) && !t.aliases.title.includes(res.altTitle)) {
+            t.aliases.title.push(res.altTitle);
+          }
+          if (res.altArtist && isArtistMatching(t.artist, res.altArtist) && !t.aliases.artist.includes(res.altArtist)) {
+            t.aliases.artist.push(res.altArtist);
+          }
         }
       }
 
@@ -578,7 +845,7 @@ export async function fetchPlaylistFromEmbed(playlistId) {
         aliases: { title: [], artist: [] },
         isSpotify: true,
       };
-    }).filter(t => t.title);
+    }).filter(t => t.title && !isKaraokeOrUnwantedTrack(t.title, t.artist));
     const deduped = deduplicateTracks(rawTracks);
     if (deduped.length > 0) {
       playlistEmbedCache.set(playlistId, { tracks: deduped, timestamp: Date.now() });
@@ -600,17 +867,18 @@ export async function fetchPlaylistFromEmbed(playlistId) {
  */
 export const PUBLIC_RANDOM_SEEDS = [
   '37i9dQZF1DXcBWIGoYBM5M', // Today's Top Hits (Global Top 50)
+  '37i9dQZF1DWT9uTRZAYj0c', // Hot Hits Korea Top 100 (Real Korean Top 100)
   '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON! (K-Pop Hits)
-  '37i9dQZF1DX1lVhptIYRda', // Hot Hits Korea (Korean Top Hits)
+  '37i9dQZF1DXe5W6diBL5N4', // All New K-Pop (Korean New Releases)
+  '37i9dQZF1DXdbRLJPSmnyq', // J-Pop Hits
+  '37i9dQZF1DXafb0IuPwJyF', // Tokyo Super Hits
   '37i9dQZF1DX4o1oenSJRJd', // All Out 00s (2000s Pop & Rock)
   '37i9dQZF1DXbTxeAdrVG2l', // All Out 90s (90s Classics)
   '37i9dQZF1DX5Ejj0EkURtP', // All Out 10s (2010s Hits)
   '37i9dQZF1DX0XUsuxWHRQd', // RapCaviar (Hip-Hop)
   '37i9dQZF1DWXRqgorJj26U', // Rock Classics (Classic Rock)
-  '37i9dQZF1DX4JAvHpjipBk', // New Music Friday (Latest Trends)
   '37i9dQZF1DX4UtSsGT1Sbe', // 80s Smash Hits (80s Classics)
   '37i9dQZF1DX4WYpdgoIcn6', // Chill Hits
-  '37i9dQZF1DXa2PvUikemBt', // Pop Rising
 ];
 
 /**
@@ -623,6 +891,9 @@ function convertRawSpotifyItemsToTracks(rawItems) {
     if (!t || !t.name) continue;
 
     const artistName = (t.artists || []).map(a => a.name).join(', ') || 'Various Artists';
+    if (isKaraokeOrUnwantedTrack(t.name, artistName, t.album?.name)) {
+      continue;
+    }
     const year = parseInt(t.album?.release_date?.slice(0, 4), 10) || null;
     const coverUrl = t.album?.images?.[0]?.url || '';
     const spotifyUrl = t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`;
@@ -790,21 +1061,23 @@ export async function fetchSpotifyPlaylist(playlistInput, clientId, clientSecret
 export const GENRE_SEED_MAP = {
   // K-Pop 메가 히트곡 (최신 인기곡 & 공식 차트 대표곡)
   kpop_hits: [
-    '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON! (최신 대표 K-Pop)
-    '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation (글로벌 K-Pop 명곡)
+    '37i9dQZF1DWT9uTRZAYj0c', // Hot Hits Korea Top 100
+    '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON!
+    '37i9dQZF1DXe5W6diBL5N4', // All New K-Pop
   ],
-  // 90~2000년대 명곡 (추억의 싸이월드 가요 & 밀레니엄 히트)
+  // 90~2000년대 명곡 & 레트로 가요
   kpop_retro: [
-    '37i9dQZF1DX4o1oenSJRJd', // 2000s 추억의 가요 & 팝
-    '37i9dQZF1DXbTxeAdrVG2l', // 90s 명곡
-    '37i9dQZF1DX4UtSsGT1Sbe', // 80s 추억의 스매시 히트
+    '37i9dQZF1DWT9uTRZAYj0c', // Hot Hits Korea Top 100
+    '37i9dQZF1DXe5W6diBL5N4', // All New K-Pop
   ],
   // K-Pop 전체 (히트곡 + 레트로 + 글로벌 전 세대 총망라)
   kpop_all: [
+    '37i9dQZF1DWT9uTRZAYj0c', // Hot Hits Korea Top 100
     '37i9dQZF1DX9tPFwDMOaN1', // K-Pop ON!
-    '37i9dQZF1DXe5W6diBL5N4', // K-Pop Generation
+    '37i9dQZF1DXe5W6diBL5N4', // All New K-Pop
   ],
   kpop: [
+    '37i9dQZF1DWT9uTRZAYj0c',
     '37i9dQZF1DX9tPFwDMOaN1',
     '37i9dQZF1DXe5W6diBL5N4',
   ],
@@ -900,6 +1173,7 @@ export async function fetchSpotifyRandomTracks(clientId, clientSecret, count = 8
           const t = item.track || item;
           if (!t || !t.name || !t.artists?.length) continue;
           const artistName = t.artists.map(a => a.name).join(', ') || 'Various Artists';
+          if (isKaraokeOrUnwantedTrack(t.name, artistName, t.album?.name)) continue;
           const year = parseInt(t.album?.release_date?.slice(0, 4), 10) || null;
           const coverUrl = t.album?.images?.[0]?.url || '';
           const spotifyUrl = t.external_urls?.spotify || `https://open.spotify.com/track/${t.id}`;
