@@ -64,6 +64,7 @@ export type RoomState = {
   solvers?: RoundSolvers;
   reveal?: Reveal;
   timelines?: Record<string, TimelineEntry[]>;
+  skipVotes?: string[];
 };
 
 export type Reveal = {
@@ -252,6 +253,25 @@ export const useGame = create<Store>((set, get) => ({
               ...prev.state,
               scores: data.scores,
               solvers: data.solvers,
+            },
+          };
+        });
+      });
+
+      socket.on('round:skip_vote', (data: { voterId: string; voterName: string; currentVotes: number; requiredVotes: number; voters: string[] }) => {
+        const me = get().me;
+        if (data.voterName) {
+          const msg = data.voterId === me
+            ? `넘기기에 투표했습니다 (${data.currentVotes}/${data.requiredVotes})`
+            : `${data.voterName}님이 넘기기에 투표했습니다 (${data.currentVotes}/${data.requiredVotes})`;
+          get().addToast(msg, 'warning');
+        }
+        set(prev => {
+          if (!prev.state) return prev;
+          return {
+            state: {
+              ...prev.state,
+              skipVotes: data.voters,
             },
           };
         });

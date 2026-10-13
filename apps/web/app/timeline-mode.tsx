@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, type TimelineEntry } from '@/lib/game';
 import { tracks as staticTracks } from '@/shared/tracks.js';
 import { VolumeControl } from '@/components/volume-control';
@@ -358,6 +358,15 @@ export default function TimelineMode() {
     );
   }
 
+  const connectedPlayers = useMemo(
+    () => (state?.players || []).filter(p => p.connected !== false),
+    [state?.players]
+  );
+  const activeCount = Math.max(1, connectedPlayers.length);
+  const skipVotes = state?.skipVotes || [];
+  const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
+  const hasVoted = !!me && skipVotes.includes(me);
+
   return (
     <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
       <audio
@@ -581,15 +590,27 @@ export default function TimelineMode() {
               type="button"
               onClick={handleSkip}
               disabled={skipping}
-              className="liquid-btn-primary px-8 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
+              className={`px-8 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl transition-all ${
+                hasVoted
+                  ? 'border-2 border-emerald-400 bg-emerald-500/25 text-emerald-200'
+                  : 'liquid-btn-primary hover:scale-[1.02] active:scale-95'
+              }`}
             >
-              <span>⏭️ 다음 턴으로 넘기기</span>
+              <span>
+                {hasVoted
+                  ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount})`
+                  : activeCount > 1
+                  ? `⏭️ 다음 턴으로 넘기기 (${currentVotesCount}/${activeCount})`
+                  : '⏭️ 다음 턴으로 넘기기'}
+              </span>
               <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
                 Ctrl + Enter
               </kbd>
             </button>
-            <p className="text-[11px] text-slate-400">
-              타임라인 모드는 넘기기 버튼이나 <kbd className="font-mono bg-slate-800 px-1 rounded border border-slate-700 text-slate-300">Ctrl+Enter</kbd>를 누를 때까지 대기합니다. 충분히 확인 후 다음 턴을 진행하세요.
+            <p className="text-[11px] text-slate-400 text-center">
+              {activeCount > 1
+                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 다음 턴이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)`
+                : '타임라인 모드는 넘기기 버튼이나 Ctrl+Enter를 누를 때까지 대기합니다. 충분히 확인 후 다음 턴을 진행하세요.'}
             </p>
           </div>
         </div>

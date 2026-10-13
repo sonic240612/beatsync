@@ -56,7 +56,7 @@ document.querySelector('#join').onclick=()=>socket.emit('room:join',{name:docume
 const publicRoom = room => ({
   code: room.code, phase: room.game ? room.game.phase : room.phase, hostId: room.hostId, settings: room.settings,
   players: room.players.map(({ id, name, connected }) => ({ id, name, connected })),
-  ...(room.game ? { scores: Object.fromEntries(room.game.scores), roundId: room.game.roundId, turn: room.game.config.mode === 'timeline' ? room.game.currentTurn : undefined, endsAt: room.game.phase === 'playing' ? room.game.roundEndsAt : undefined, preview: room.game.phase === 'playing' ? room.game.current?.preview : undefined, track: room.game.phase !== 'playing' ? room.game.current?.track : undefined, solvers: room.game.roundSolvers, reveal: room.game.phase === 'reveal' ? room.game.lastReveal : undefined, timelines: room.game.config.mode === 'timeline' ? Object.fromEntries([...room.game.timelines].map(([id, cards]) => [id, cards])) : undefined } : {}),
+  ...(room.game ? { scores: Object.fromEntries(room.game.scores), roundId: room.game.roundId, turn: room.game.config.mode === 'timeline' ? room.game.currentTurn : undefined, endsAt: room.game.phase === 'playing' ? room.game.roundEndsAt : undefined, preview: room.game.phase === 'playing' ? room.game.current?.preview : undefined, track: room.game.phase !== 'playing' ? room.game.current?.track : undefined, solvers: room.game.roundSolvers, reveal: room.game.phase === 'reveal' ? room.game.lastReveal : undefined, timelines: room.game.config.mode === 'timeline' ? Object.fromEntries([...room.game.timelines].map(([id, cards]) => [id, cards])) : undefined, skipVotes: [...(room.game.skipVotes || [])] } : {}),
 });
 function emitState(room) {
   const connected = room.players.filter(p => p.connected);
@@ -278,7 +278,7 @@ io.on('connection', (socket) => {
   socket.on('game:next', guard(() => {
     const room = requirePlayer();
     if (!room.game) throw Error('진행 중인 게임이 없습니다.');
-    const result = room.game.skip();
+    const result = room.game.skip(socket.data.playerId);
     emitState(room);
     return toAck(result);
   }));
@@ -298,6 +298,9 @@ io.on('connection', (socket) => {
     const player = room?.players.find(p => p.id === socket.data.playerId);
     if (!player || player.socketId !== socket.id) return;
     player.connected = false; player.disconnectedAt = Date.now();
+    if (room.game && (room.game.phase === 'playing' || room.game.phase === 'reveal')) {
+      room.game.checkSkipVotes();
+    }
     emitState(room);
   });
 });

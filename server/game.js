@@ -49,6 +49,7 @@ export class Game {
     this.timer = null; this.roundId = 0; this.currentTurn = null; this.current = null;
     this.roundSolvers = { title: null, artist: null };
     this.lastReveal = null;
+    this.skipVotes = new Set();
     for (const player of room.players) {
       this.scores.set(player.id, 0);
       if (config.mode === 'timeline') this.timelines.set(player.id, this.timelineStart());
@@ -127,6 +128,7 @@ export class Game {
     this.phase = 'playing'; this.roundId += 1; this.winner = null;
     this.roundSolvers = { title: null, artist: null };
     this.lastReveal = null;
+    this.skipVotes.clear();
     this.roundStartedAt = this.now();
     const roundDurationSec = this.config.roundSeconds || (this.config.mode === 'speed' ? 60 : snippetSec);
     this.roundEndsAt = this.roundStartedAt + roundDurationSec * 1000;
@@ -313,11 +315,37 @@ export class Game {
     // Timeline mode: NO auto advance timer. Waits for manual skip/next button!
     return { ok: false, error: '카드가 폐기되었습니다.', discarded: true };
   }
-  skip() {
+  skip(playerId) {
     if (this.phase === 'reveal') {
-      return this.skipReveal();
+      return this.skipReveal(playerId);
     }
     if (this.phase === 'playing') {
+      const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
+      const totalActive = Math.max(1, activePlayers.length);
+
+      if (playerId) {
+        this.skipVotes.add(playerId);
+        if (this.skipVotes.size < totalActive) {
+          const voter = activePlayers.find(p => p.id === playerId);
+          const voterName = voter?.name || '플레이어';
+          this.room.emit('round:skip_vote', {
+            voterId: playerId,
+            voterName,
+            currentVotes: this.skipVotes.size,
+            requiredVotes: totalActive,
+            voters: [...this.skipVotes],
+            phase: this.phase,
+          });
+          return {
+            ok: true,
+            voted: true,
+            currentVotes: this.skipVotes.size,
+            requiredVotes: totalActive,
+          };
+        }
+      }
+
+      this.skipVotes.clear();
       this.clear(this.timer);
       if (this.config.mode === 'speed') {
         const winnerId = (this.roundSolvers.title?.playerId === this.roundSolvers.artist?.playerId)
@@ -333,8 +361,35 @@ export class Game {
     }
     return { ok: false, error: '현재 넘길 수 있는 상태가 아닙니다.' };
   }
-  skipReveal() {
-    if (this.phase !== 'reveal') return this.skip();
+  skipReveal(playerId) {
+    if (this.phase !== 'reveal') return this.skip(playerId);
+
+    const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
+    const totalActive = Math.max(1, activePlayers.length);
+
+    if (playerId) {
+      this.skipVotes.add(playerId);
+      if (this.skipVotes.size < totalActive) {
+        const voter = activePlayers.find(p => p.id === playerId);
+        const voterName = voter?.name || '플레이어';
+        this.room.emit('round:skip_vote', {
+          voterId: playerId,
+          voterName,
+          currentVotes: this.skipVotes.size,
+          requiredVotes: totalActive,
+          voters: [...this.skipVotes],
+          phase: this.phase,
+        });
+        return {
+          ok: true,
+          voted: true,
+          currentVotes: this.skipVotes.size,
+          requiredVotes: totalActive,
+        };
+      }
+    }
+
+    this.skipVotes.clear();
     this.clear(this.startTimer);
     this.lastReveal = null;
     if (this.config.mode === 'speed') {
@@ -343,7 +398,33 @@ export class Game {
       this.advanceTurn();
       this.beginTurn();
     }
-    return { ok: true };
+    return { ok: true, skipped: true };
+  }
+  checkSkipVotes() {
+    if (this.skipVotes.size === 0) return;
+    const activePlayers = (this.room.players || []).filter(p => p.connected !== false);
+    const totalActive = Math.max(1, activePlayers.length);
+    for (const vId of this.skipVotes) {
+      if (!activePlayers.some(p => p.id === vId)) {
+        this.skipVotes.delete(vId);
+      }
+    }
+    if (this.skipVotes.size >= totalActive) {
+      if (this.phase === 'playing') {
+        this.skip();
+      } else if (this.phase === 'reveal') {
+        this.skipReveal();
+      }
+    } else {
+      this.room.emit('round:skip_vote', {
+        voterId: '',
+        voterName: '',
+        currentVotes: this.skipVotes.size,
+        requiredVotes: totalActive,
+        voters: [...this.skipVotes],
+        phase: this.phase,
+      });
+    }
   }
   advanceTurn() {
     const order = this.room.players.map(p => p.id);
@@ -360,6 +441,7 @@ export class Game {
   }
   revealCurrent(winnerId, extra = {}) {
     this.phase = 'reveal';
+    this.skipVotes.clear();
     const endsAt = this.config.mode === 'speed' ? (this.now() + this.revealMs) : undefined;
     const winnerPlayer = winnerId ? this.room.players?.find(p => p.id === winnerId) : null;
     const turnPlayer = this.currentTurn ? this.room.players?.find(p => p.id === this.currentTurn) : null;
@@ -403,6 +485,7 @@ export class Game {
       preview: this.current.preview,
       solvers: this.roundSolvers,
       reveal: revealed ? this.lastReveal : undefined,
+      skipVotes: [...this.skipVotes],
     };
   }
 }

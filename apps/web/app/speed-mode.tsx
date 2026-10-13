@@ -188,6 +188,15 @@ export default function SpeedMode() {
     [players, scores]
   );
 
+  const connectedPlayers = useMemo(
+    () => (state?.players || []).filter(p => p.connected !== false),
+    [state?.players]
+  );
+  const activeCount = Math.max(1, connectedPlayers.length);
+  const skipVotes = state?.skipVotes || [];
+  const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
+  const hasVoted = !!me && skipVotes.includes(me);
+
   // Game Over Podium
   if (over) {
     const highestScore = Math.max(...Object.values(over.scores), 0);
@@ -492,9 +501,19 @@ export default function SpeedMode() {
               type="button"
               onClick={handleSkip}
               disabled={skipping}
-              className="liquid-btn-primary px-7 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
+              className={`px-7 py-3 text-sm font-black flex items-center gap-2.5 shadow-xl transition-all ${
+                hasVoted
+                  ? 'border-2 border-emerald-400 bg-emerald-500/25 text-emerald-200'
+                  : 'liquid-btn-primary hover:scale-[1.02] active:scale-95'
+              }`}
             >
-              <span>⏭️ 다음 노래로 넘기기</span>
+              <span>
+                {hasVoted
+                  ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount})`
+                  : activeCount > 1
+                  ? `⏭️ 다음 노래로 넘기기 (${currentVotesCount}/${activeCount})`
+                  : '⏭️ 다음 노래로 넘기기'}
+              </span>
               <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-200 border border-emerald-400/30">
                 Ctrl + Enter
               </kbd>
@@ -504,8 +523,10 @@ export default function SpeedMode() {
                 </span>
               )}
             </button>
-            <p className="text-[11px] text-slate-400">
-              미리듣기 종료 후 1분간 정답 곡을 확인하실 수 있으며, 넘기기 버튼이나 <kbd className="font-mono bg-slate-800 px-1 rounded border border-slate-700 text-slate-300">Ctrl+Enter</kbd>를 누르면 즉시 다음 곡이 시작됩니다.
+            <p className="text-[11px] text-slate-400 text-center">
+              {activeCount > 1
+                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 즉시 다음 곡이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)`
+                : '미리듣기 종료 후 1분간 정답 곡을 확인하실 수 있으며, 넘기기 버튼이나 Ctrl+Enter를 누르면 즉시 다음 곡이 시작됩니다.'}
             </p>
           </div>
         </div>
@@ -608,18 +629,33 @@ export default function SpeedMode() {
           </button>
 
           {/* Always-Active Skip Button in Form Area */}
-          <div className="pt-1 flex justify-center">
+          <div className="pt-1 flex flex-col items-center justify-center gap-1.5">
             <button
               type="button"
               onClick={handleSkip}
               disabled={skipping}
-              className="liquid-btn-secondary w-full py-2.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-700/60 transition-all shadow-sm active:scale-95"
+              className={`w-full py-2.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
+                hasVoted
+                  ? 'border border-emerald-400/80 bg-emerald-500/20 text-emerald-300'
+                  : 'liquid-btn-secondary hover:bg-slate-700/60'
+              }`}
             >
-              <span>⏭️ 이번 문제 넘기기 (정답 확인)</span>
+              <span>
+                {hasVoted
+                  ? `✓ 넘기기 투표 완료 (${currentVotesCount}/${activeCount}명 동의 - 다른 플레이어 대기 중)`
+                  : activeCount > 1
+                  ? `⏭️ 이번 문제 넘기기 투표 (${currentVotesCount}/${activeCount})`
+                  : '⏭️ 이번 문제 넘기기 (정답 확인)'}
+              </span>
               <kbd className="hidden sm:inline-block rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono text-slate-300 border border-slate-600">
                 Ctrl + Enter
               </kbd>
             </button>
+            {activeCount > 1 && (
+              <p className="text-[11px] text-slate-400 text-center">
+                멀티플레이 중에는 모든 접속자({activeCount}명)가 넘기기 버튼을 눌러야 이번 문제가 넘어갑니다.
+              </p>
+            )}
           </div>
         </form>
       )}
