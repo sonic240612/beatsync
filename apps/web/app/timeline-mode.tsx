@@ -173,16 +173,34 @@ export default function TimelineMode() {
     }
   };
 
+  const isHost = !!me && state?.hostId === me;
+
   const handleSkipRef = useRef(handleSkip);
   handleSkipRef.current = handleSkip;
 
-  // Global Ctrl + Enter / Cmd + Enter shortcut to trigger skip
+  const handleForceSkipRef = useRef(handleForceSkip);
+  handleForceSkipRef.current = handleForceSkip;
+
+  const isHostRef = useRef(isHost);
+  isHostRef.current = isHost;
+
+  // Global shortcuts:
+  // - Shift + Enter: Host force skip
+  // - Ctrl + Enter / Cmd + Enter: Skip vote
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        e.stopPropagation();
-        handleSkipRef.current();
+      if (e.key === 'Enter') {
+        if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          if (isHostRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleForceSkipRef.current();
+          }
+        } else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSkipRef.current();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
@@ -376,7 +394,6 @@ export default function TimelineMode() {
   const skipVotes = state?.skipVotes || [];
   const currentVotesCount = skipVotes.filter(id => connectedPlayers.some(p => p.id === id)).length;
   const hasVoted = !!me && skipVotes.includes(me);
-  const isHost = !!me && state?.hostId === me;
 
   return (
     <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
@@ -414,10 +431,13 @@ export default function TimelineMode() {
               type="button"
               onClick={handleForceSkip}
               disabled={skipping}
-              title="호스트 권한으로 투표 없이 즉시 넘기기"
-              className="px-2.5 py-1.5 sm:px-3 text-xs font-bold flex items-center gap-1 rounded-xl border border-amber-400/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 active:scale-95 transition-all shadow-sm"
+              title="호스트 권한으로 투표 없이 즉시 넘기기 (Shift + Enter)"
+              className="px-2.5 py-1.5 sm:px-3 text-xs font-bold flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 active:scale-95 transition-all shadow-sm"
             >
               <span>⚡ 강제 넘기기</span>
+              <kbd className="hidden md:inline-block rounded px-1.5 py-0.5 text-[10px] font-mono border transition-colors bg-amber-100 text-amber-900 border-amber-300 shadow-sm dark:bg-black/40 dark:text-amber-200 dark:border-amber-400/40">
+                Shift + Enter
+              </kbd>
             </button>
           )}
 
@@ -638,16 +658,19 @@ export default function TimelineMode() {
                   type="button"
                   onClick={handleForceSkip}
                   disabled={skipping}
-                  title="호스트 권한으로 투표 없이 즉시 넘기기"
+                  title="호스트 권한으로 투표 없이 즉시 넘기기 (Shift + Enter)"
                   className="px-5 py-3 text-sm font-black flex items-center gap-2 rounded-2xl border-2 border-amber-400/70 bg-amber-500/20 text-amber-200 hover:bg-amber-500/35 active:scale-95 transition-all shadow-xl"
                 >
                   <span>⚡ 강제 넘기기</span>
+                  <kbd className="hidden sm:inline-block rounded px-1.5 py-0.5 text-[10px] font-mono font-semibold border transition-colors bg-amber-100 text-amber-900 border-amber-300 shadow-sm dark:bg-black/40 dark:text-amber-200 dark:border-amber-400/40">
+                    Shift + Enter
+                  </kbd>
                 </button>
               )}
             </div>
             <p className="text-[11px] text-slate-400 text-center">
               {activeCount > 1
-                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 다음 턴이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)${isHost ? ' (호스트는 ⚡강제 넘기기 가능)' : ''}`
+                ? `모든 접속자(${activeCount}명)가 넘기기를 눌러야 다음 턴이 시작됩니다. (현재 ${currentVotesCount}/${activeCount}명 동의)${isHost ? ' (호스트는 ⚡강제 넘기기: Shift + Enter 가능)' : ''}`
                 : '타임라인 모드는 넘기기 버튼이나 Ctrl+Enter를 누를 때까지 대기합니다. 충분히 확인 후 다음 턴을 진행하세요.'}
             </p>
           </div>
