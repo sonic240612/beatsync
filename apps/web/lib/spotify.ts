@@ -1,11 +1,9 @@
 'use client';
 
 /**
- * Spotify Account & Playlists Integration for BeatSync
- * Supports:
- * 1) 간편 Spotify 계정 연동 (No API Key, No Client ID required - nickname, music tastes & playlist collection)
- * 2) 내 Spotify 플레이리스트 보관 및 원클릭 불러오기
- * 3) 고급 사용자용 Spotify OAuth (PKCE)
+ * Spotify Playlists & Track Helpers for BeatSync
+ * No login, No API key, No Client ID required.
+ * Players directly paste Spotify playlist URLs or select curated presets.
  */
 
 export interface SpotifyPlaylistItem {
@@ -16,30 +14,6 @@ export interface SpotifyPlaylistItem {
   tracks?: { total: number };
   url: string;
 }
-
-export interface SpotifyProfile {
-  id: string;
-  displayName: string;
-  avatarUrl?: string;
-  images?: { url: string }[];
-  genres?: string[];
-  savedPlaylists: SpotifyPlaylistItem[];
-  connectedAt: number;
-  email?: string;
-  product?: string;
-  isOAuth?: boolean;
-  authError?: 'forbidden_users_access' | string;
-  likedTracksCount?: number;
-}
-
-export const SPOTIFY_GENRE_OPTIONS = [
-  { id: 'kpop', label: '🔥 K-Pop / 아이돌', desc: '뉴진스, BTS, 아이유, 르세라핌 등' },
-  { id: 'pop', label: '🌐 글로벌 팝', desc: '테일러 스위프트, 브루노 마스, 위켄드 등' },
-  { id: 'retro', label: '📼 80~2000s 레트로', desc: '싸이월드 가요, 90년대 명곡, 올드팝' },
-  { id: 'rock', label: '🎸 밴드 / 록', desc: '데이식스, QWER, 오아시스, 퀸 등' },
-  { id: 'hiphop', label: '🎧 힙합 / R&B', desc: '트렌디한 힙합, 비트감 넘치는 트랙' },
-  { id: 'chill', label: '🌙 잔잔한 감성 / 인디', desc: '감성 인디, 카페 음악, 힐링송' },
-];
 
 export const DEFAULT_PRESET_PLAYLISTS: SpotifyPlaylistItem[] = [
   {
@@ -76,395 +50,58 @@ export const DEFAULT_PRESET_PLAYLISTS: SpotifyPlaylistItem[] = [
   },
 ];
 
-const STORAGE_KEY_TOKEN = 'beatsync_spotify_token';
-const STORAGE_KEY_REFRESH = 'beatsync_spotify_refresh';
-const STORAGE_KEY_EXPIRES = 'beatsync_spotify_expires';
-const STORAGE_KEY_VERIFIER = 'beatsync_spotify_verifier';
-const STORAGE_KEY_PROFILE = 'beatsync_spotify_profile';
-const STORAGE_KEY_CLIENT_ID = 'beatsync_spotify_client_id';
+const STORAGE_KEY_SAVED_PLAYLISTS = 'beatsync_saved_playlists';
 
-export function getStoredProfile(): SpotifyProfile | null {
-  if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
+export function getSavedPlaylists(): SpotifyPlaylistItem[] {
+  if (typeof window === 'undefined') return DEFAULT_PRESET_PLAYLISTS;
+  const raw = localStorage.getItem(STORAGE_KEY_SAVED_PLAYLISTS);
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && parsed.displayName) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
     } catch {}
   }
-  // Fallback: If we have an active non-expired OAuth token, we are logged in!
-  const token = getStoredToken();
-  if (token) {
-    const fallbackName = localStorage.getItem('beatsync-name') || 'Spotify 사용자';
-    const fallback: SpotifyProfile = {
-      id: 'spotify-oauth-user',
-      displayName: fallbackName,
-      genres: ['kpop', 'pop', 'retro'],
-      savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
-      connectedAt: Date.now(),
-      isOAuth: true,
-    };
-    try {
-      localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(fallback));
-    } catch {}
-    return fallback;
-  }
-  return null;
+  return DEFAULT_PRESET_PLAYLISTS;
 }
 
-/**
- * 100% No-API Direct Spotify Account Connection
- * Connects instantly with user's nickname, favorite genres, and custom playlist collection
- */
-export function simpleLogin(
-  displayName: string,
-  customPlaylists: SpotifyPlaylistItem[] = []
-): SpotifyProfile {
-  const trimmed = displayName.trim() || 'Spotify 플레이어';
-  const existing = getStoredProfile();
-  const mergedPlaylists = [
-    ...(customPlaylists.length ? customPlaylists : existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS),
-  ];
-
-  const profile: SpotifyProfile = {
-    id: `spotify-user-${Date.now().toString(36)}`,
-    displayName: trimmed,
-    savedPlaylists: mergedPlaylists,
-    connectedAt: Date.now(),
-    isOAuth: false,
-  };
-
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
-  }
-  return profile;
-}
-
-export function updateProfileGenres(genres: string[]): SpotifyProfile | null {
-  const profile = getStoredProfile();
-  if (!profile) return null;
-  profile.genres = genres;
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
-  }
-  return profile;
-}
-
-export function addSavedPlaylist(playlist: { name: string; url: string }): SpotifyProfile | null {
-  const profile = getStoredProfile() || simpleLogin('Spotify 플레이어');
+export function addSavedPlaylist(playlist: { name: string; url: string }): SpotifyPlaylistItem[] {
+  const current = getSavedPlaylists();
   const playlistId = extractPlaylistIdFromUrl(playlist.url) || `custom-${Date.now()}`;
   const newItem: SpotifyPlaylistItem = {
     id: playlistId,
     name: playlist.name.trim() || '내 플레이리스트',
     url: playlist.url.trim(),
-    tracks: { total: 30 },
   };
 
-  profile.savedPlaylists = [newItem, ...(profile.savedPlaylists || [])];
+  const updated = [newItem, ...current.filter(p => p.url !== newItem.url)];
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+    localStorage.setItem(STORAGE_KEY_SAVED_PLAYLISTS, JSON.stringify(updated));
   }
-  return profile;
+  return updated;
 }
 
-export function removeSavedPlaylist(idOrUrl: string): SpotifyProfile | null {
-  const profile = getStoredProfile();
-  if (!profile) return null;
-  profile.savedPlaylists = (profile.savedPlaylists || []).filter(
-    p => p.id !== idOrUrl && p.url !== idOrUrl
-  );
+export function removeSavedPlaylist(id: string): SpotifyPlaylistItem[] {
+  const current = getSavedPlaylists();
+  const updated = current.filter(p => p.id !== id);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+    localStorage.setItem(STORAGE_KEY_SAVED_PLAYLISTS, JSON.stringify(updated));
   }
-  return profile;
+  return updated;
 }
 
-export function getSavedPlaylists(): SpotifyPlaylistItem[] {
-  const profile = getStoredProfile();
-  if (profile?.savedPlaylists?.length) {
-    return profile.savedPlaylists;
-  }
-  return DEFAULT_PRESET_PLAYLISTS;
-}
-
-export function clearSpotifySession(): void {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY_TOKEN);
-  localStorage.removeItem(STORAGE_KEY_REFRESH);
-  localStorage.removeItem(STORAGE_KEY_EXPIRES);
-  localStorage.removeItem(STORAGE_KEY_PROFILE);
-  localStorage.removeItem(STORAGE_KEY_VERIFIER);
-}
-
-function extractPlaylistIdFromUrl(url: string): string | null {
+export function extractPlaylistIdFromUrl(url: string): string | null {
   const match = String(url).match(/playlist[/:]([a-zA-Z0-9]+)/) || String(url).match(/^([a-zA-Z0-9]+)$/);
   return match ? match[1] : null;
 }
 
-// -------------------------------------------------------------
-// Advanced OAuth / Token Helpers (Optional for power users)
-// -------------------------------------------------------------
-const DEFAULT_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '';
-
-export function getStoredClientId(): string {
-  if (typeof window === 'undefined') return DEFAULT_CLIENT_ID;
-  return localStorage.getItem(STORAGE_KEY_CLIENT_ID) || DEFAULT_CLIENT_ID;
-}
-
-export function setStoredClientId(clientId: string): void {
+export function clearSpotifySession(): void {
   if (typeof window === 'undefined') return;
-  const trimmed = clientId.trim();
-  if (trimmed) {
-    localStorage.setItem(STORAGE_KEY_CLIENT_ID, trimmed);
-  } else {
-    localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
-  }
-}
-
-export function getStoredToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  const token = localStorage.getItem(STORAGE_KEY_TOKEN);
-  const expiresAt = Number(localStorage.getItem(STORAGE_KEY_EXPIRES) || '0');
-  if (!token) return null;
-  if (expiresAt && Date.now() > expiresAt - 30000) {
-    return null;
-  }
-  return token;
-}
-
-export function saveSpotifySession(token: string, refreshToken = '', expiresInSeconds = 3600, profile?: SpotifyProfile): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY_TOKEN, token);
-  if (refreshToken) localStorage.setItem(STORAGE_KEY_REFRESH, refreshToken);
-  if (expiresInSeconds) {
-    localStorage.setItem(STORAGE_KEY_EXPIRES, String(Date.now() + expiresInSeconds * 1000));
-  }
-  const existing = getStoredProfile();
-  const profileToSave: SpotifyProfile = profile || existing || {
-    id: `spotify-user-${Date.now().toString(36)}`,
-    displayName: (typeof window !== 'undefined' ? localStorage.getItem('beatsync-name') : null) || 'Spotify 사용자',
-    genres: ['kpop', 'pop', 'retro'],
-    savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
-    connectedAt: Date.now(),
-    isOAuth: true,
-  };
-  localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profileToSave));
-  if (profileToSave.displayName) {
-    localStorage.setItem('beatsync-name', profileToSave.displayName);
-  }
-}
-
-export async function initiateSpotifyLogin(customClientId?: string): Promise<{ ok: boolean; error?: string }> {
-  if (typeof window === 'undefined') return { ok: false, error: '브라우저 환경이 아닙니다.' };
-  const clientId = (customClientId || getStoredClientId()).trim();
-  if (!clientId) {
-    return { ok: false, error: 'Spotify Client ID가 필요합니다.' };
-  }
-  try {
-    setStoredClientId(clientId);
-    const verifier = generateCodeVerifier();
-    const challenge = await generateCodeChallenge(verifier);
-    localStorage.setItem(STORAGE_KEY_VERIFIER, verifier);
-    const redirectUri = `${window.location.origin}/callback`;
-    // Clean, comprehensive scopes for reading user profile and playlists
-    const scopes = 'user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read';
-    const params = new URLSearchParams({
-      client_id: clientId,
-      response_type: 'code',
-      redirect_uri: redirectUri,
-      scope: scopes,
-      code_challenge_method: 'S256',
-      code_challenge: challenge,
-      show_dialog: 'true',
-    });
-    window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
-    return { ok: true };
-  } catch (err: any) {
-    return { ok: false, error: err?.message || '로그인 시작 실패' };
-  }
-}
-
-export async function handleSpotifyCallback(code: string): Promise<{ ok: boolean; error?: string; profile?: SpotifyProfile }> {
-  if (typeof window === 'undefined') return { ok: false, error: '브라우저 환경이 아닙니다.' };
-  const clientId = getStoredClientId();
-  const verifier = localStorage.getItem(STORAGE_KEY_VERIFIER);
-  if (!clientId || !verifier) {
-    return { ok: false, error: '인증 정보가 올바르지 않습니다.' };
-  }
-  const redirectUri = `${window.location.origin}/callback`;
-  try {
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-        code_verifier: verifier,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok || !data.access_token) {
-      return { ok: false, error: data.error_description || data.error || '토큰 발급 실패' };
-    }
-    const token = data.access_token;
-    let profile = await fetchSpotifyProfile(token);
-    if (!profile) {
-      profile = {
-        id: `spotify-user-${Date.now().toString(36)}`,
-        displayName: localStorage.getItem('beatsync-name') || 'Spotify 사용자',
-        genres: ['kpop', 'pop', 'retro'],
-        savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
-        connectedAt: Date.now(),
-        isOAuth: true,
-      };
-    }
-    saveSpotifySession(token, data.refresh_token, data.expires_in, profile);
-    localStorage.removeItem(STORAGE_KEY_VERIFIER);
-    return { ok: true, profile };
-  } catch (err: any) {
-    return { ok: false, error: err?.message || '콜백 처리 실패' };
-  }
-}
-
-export async function fetchSpotifyProfile(token: string): Promise<SpotifyProfile | null> {
-  // 1. Try our server-side proxy route first (bypasses browser adblockers and CORS)
-  try {
-    const res = await fetch('/api/spotify/user-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.ok && json.profile) {
-        const existing = getStoredProfile();
-        return {
-          ...json.profile,
-          genres: existing?.genres || ['kpop', 'pop', 'retro'],
-          savedPlaylists: json.profile.savedPlaylists?.length ? json.profile.savedPlaylists : (existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS),
-        };
-      }
-      if (json.error === 'FORBIDDEN_USERS_ACCESS') {
-        const existing = getStoredProfile();
-        return {
-          id: 'spotify-oauth-user',
-          displayName: localStorage.getItem('beatsync-name') || 'Spotify 사용자',
-          genres: existing?.genres || ['kpop', 'pop', 'retro'],
-          savedPlaylists: existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS,
-          connectedAt: Date.now(),
-          isOAuth: true,
-          authError: 'forbidden_users_access',
-        };
-      }
-    }
-  } catch (e) {
-    console.warn('Server user-data endpoint failed, trying direct browser fetch:', e);
-  }
-
-  // 2. Fallback to direct Spotify Web API fetch
-  try {
-    const res = await fetch('https://api.spotify.com/v1/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      console.warn('Failed to fetch /v1/me status:', res.status);
-      if (res.status === 403) {
-        const existing = getStoredProfile();
-        return {
-          id: 'spotify-oauth-user',
-          displayName: localStorage.getItem('beatsync-name') || 'Spotify 사용자',
-          genres: existing?.genres || ['kpop', 'pop', 'retro'],
-          savedPlaylists: existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS,
-          connectedAt: Date.now(),
-          isOAuth: true,
-          authError: 'forbidden_users_access',
-        };
-      }
-      return null;
-    }
-    const data = await res.json();
-    let userPlaylists: SpotifyPlaylistItem[] = DEFAULT_PRESET_PLAYLISTS;
-    try {
-      const pl = await fetchUserPlaylists(token);
-      if (Array.isArray(pl) && pl.length > 0) userPlaylists = pl;
-    } catch (e) {
-      console.warn('Failed to fetch playlists:', e);
-    }
-    const existing = getStoredProfile();
-    const avatarUrl = Array.isArray(data.images) && data.images[0]?.url ? data.images[0].url : '';
-    const displayName =
-      data.display_name?.trim() ||
-      (data.email ? String(data.email).split('@')[0] : '') ||
-      data.id ||
-      'Spotify 사용자';
-
-    return {
-      id: data.id || 'spotify-user',
-      displayName,
-      avatarUrl,
-      images: Array.isArray(data.images) ? data.images : [],
-      email: data.email || '',
-      product: data.product || '',
-      genres: existing?.genres || ['kpop', 'pop', 'retro'],
-      savedPlaylists: userPlaylists,
-      connectedAt: Date.now(),
-      isOAuth: true,
-    };
-  } catch (err) {
-    console.error('fetchSpotifyProfile error:', err);
-    return null;
-  }
-}
-
-export async function refreshSpotifyProfile(): Promise<SpotifyProfile | null> {
-  const token = getStoredToken();
-  if (!token) return null;
-  const profile = await fetchSpotifyProfile(token);
-  if (profile) {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
-    if (profile.displayName) {
-      localStorage.setItem('beatsync-name', profile.displayName);
-    }
-  }
-  return profile;
-}
-
-export async function fetchUserPlaylists(token: string): Promise<SpotifyPlaylistItem[]> {
-  try {
-    const res = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return DEFAULT_PRESET_PLAYLISTS;
-    const data = await res.json();
-    const items = Array.isArray(data.items) ? data.items.filter(Boolean) : [];
-    const parsed = items.map((p: any) => ({
-      id: String(p.id || ''),
-      name: String(p.name || 'Untitled Playlist'),
-      description: String(p.description || ''),
-      images: Array.isArray(p.images) ? p.images : [],
-      tracks: { total: Number(p.tracks?.total || 0) },
-      url: p.external_urls?.spotify || `https://open.spotify.com/playlist/${p.id}`,
-    })).filter((p: any) => p.id);
-    return parsed.length > 0 ? parsed : DEFAULT_PRESET_PLAYLISTS;
-  } catch {
-    return DEFAULT_PRESET_PLAYLISTS;
-  }
-}
-
-function generateCodeVerifier(length = 64): string {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-  const values = window.crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(values).map(x => possible[x % possible.length]).join('');
-}
-
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await window.crypto.subtle.digest('SHA-256', data);
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(digest)));
-  return base64.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  localStorage.removeItem('beatsync_spotify_token');
+  localStorage.removeItem('beatsync_spotify_refresh');
+  localStorage.removeItem('beatsync_spotify_expires');
+  localStorage.removeItem('beatsync_spotify_profile');
+  localStorage.removeItem('beatsync_spotify_verifier');
+  localStorage.removeItem('beatsync_spotify_client_id');
 }
