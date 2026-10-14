@@ -1,5 +1,6 @@
 // Curated Track Catalog for BeatSync (K-Pop & Global Pop with Spotify & iTunes Previews)
 import { MEGA_HITS } from './mega-hits.js';
+import { TIMELINE_TRACKS } from './timeline-catalog.js';
 
 const BASE_TRACKS = [
   // K-POP Mega Hits (kpop_hits)
@@ -1224,9 +1225,11 @@ function deduplicateCatalog(items) {
   return Array.from(map.values());
 }
 
-export const tracks = deduplicateCatalog([...BASE_TRACKS, ...MEGA_HITS]);
+export const tracks = deduplicateCatalog([...BASE_TRACKS, ...MEGA_HITS, ...TIMELINE_TRACKS]);
+export { TIMELINE_TRACKS };
 
 export const MUSIC_CATEGORIES = [
+  { id: 'timeline_all', label: '⏳ 타임라인 올타임 명곡 (1970~2026)', desc: '1970년대부터 2026년 최신곡까지 시대별로 균형 있게 구성된 타임라인 특화 카탈로그' },
   { id: 'kpop_all', label: '🇰🇷 K-Pop 전체', desc: '최신 아이돌부터 레트로 명곡까지 K-Pop 전체 출제' },
   { id: 'pop_all', label: '🌍 Pop 전체', desc: '빌보드 히트곡부터 시대별 명곡까지 글로벌 Pop 전체 출제' },
   { id: 'jpop_all', label: '🇯🇵 J-Pop 전체', desc: 'YOASOBI, 요네즈 켄시, 히게단, 애니메이션 등 J-Pop 전체 출제' },

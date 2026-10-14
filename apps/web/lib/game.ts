@@ -3,7 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 import { create } from 'zustand';
 
 export type Player = { id: string; name: string; connected: boolean };
-export type MusicSource = 'kpop_hits' | 'kpop_retro' | 'kpop_all' | 'pop_hits' | 'jpop_hits' | 'pop_all' | 'jpop_all' | 'spotify_playlist' | 'spotify_random';
+export type MusicSource = 'timeline_all' | 'kpop_hits' | 'kpop_retro' | 'kpop_all' | 'pop_hits' | 'jpop_hits' | 'pop_all' | 'jpop_all' | 'spotify_playlist' | 'spotify_random';
 
 export type Settings = {
   mode: 'speed' | 'timeline';

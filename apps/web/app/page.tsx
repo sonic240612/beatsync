@@ -12,6 +12,7 @@ const TARGET_LABEL = { title: '제목만', artist: '가수만', both: '제목 + 
 const MODE_LABEL = { speed: '⚡ 스피드 퀴즈', timeline: '⏳ 타임라인 카드' } as const;
 
 const MUSIC_SOURCE_OPTIONS: { id: MusicSource; label: string; desc: string }[] = [
+  { id: 'timeline_all', label: '⏳ 타임라인 올타임 명곡 (1970~2026)', desc: '1970년대부터 2026년 최신곡까지 시대별로 균형 있게 구성된 타임라인 특화 카탈로그' },
   { id: 'kpop_all', label: '🇰🇷 K-Pop 전체', desc: '최신 아이돌부터 레트로 명곡까지 K-Pop 전체 출제' },
   { id: 'pop_all', label: '🌍 Pop 전체', desc: '빌보드 히트곡부터 시대별 명곡까지 글로벌 Pop 전체 출제' },
   { id: 'jpop_all', label: '🇯🇵 J-Pop 전체', desc: 'YOASOBI, 요네즈 켄시, 히게단, 애니메이션 등 J-Pop 전체 출제' },
@@ -428,7 +429,13 @@ export default function Home() {
                   </div>
                   <LiquidSegmentGroup
                     value={state.settings.mode}
-                    onChange={modeKey => configure({ mode: modeKey })}
+                    onChange={modeKey => {
+                      if (modeKey === 'timeline' && (!state.settings.musicSource || state.settings.musicSource === 'kpop_hits')) {
+                        configure({ mode: modeKey, musicSource: 'timeline_all' });
+                      } else {
+                        configure({ mode: modeKey });
+                      }
+                    }}
                     disabled={!isHost}
                     options={[
                       { value: 'speed', label: '스피드 퀴즈', icon: '⚡' },
@@ -522,6 +529,16 @@ export default function Home() {
                     <span className="text-lg shrink-0">🎲</span>
                     <div className="leading-relaxed">
                       <strong className="font-black text-emerald-950 dark:text-white">완전 랜덤 셔플 활성화:</strong> K-Pop, Pop, J-Pop 등 모든 장르와 연대를 무작위로 혼합하여 매 라운드 예측 불가능한 문제가 출제됩니다!
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline Mode Curated Catalog Notice */}
+                {state.settings.musicSource === 'timeline_all' && (
+                  <div className="sm:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/25 bg-sky-100/70 dark:bg-sky-400/10 p-3.5 text-xs text-sky-900 dark:text-sky-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm">
+                    <span className="text-lg shrink-0">⏳</span>
+                    <div className="leading-relaxed">
+                      <strong className="font-black text-sky-950 dark:text-white">타임라인 특화 카탈로그:</strong> 1970년대 전설의 명곡부터 80·90 레트로, 2000·2010 명곡, 2026 최신곡까지 6개 시대의 음악이 매 라운드 고르게 순환 출제되어 연도 맞추기에 최적화되었습니다!
                     </div>
                   </div>
                 )}

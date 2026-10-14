@@ -31,6 +31,57 @@ export function createTrackProvider(baseUrl, options = {}) {
         }
       }
 
+      // 0. Timeline Mode Specialized Decade-Balanced Catalog (1970~2026):
+      // Balanced distribution across 70s, 80s, 90s, 00s, 10s, and 20s
+      if (musicSource === 'timeline_all') {
+        const eligible = catalog.filter(t => t.year && t.year >= 1960 && t.year <= 2030);
+        const buckets = {
+          1970: [],
+          1980: [],
+          1990: [],
+          2000: [],
+          2010: [],
+          2020: [],
+        };
+
+        for (const t of eligible) {
+          const y = Number(t.year);
+          if (y < 1980) buckets[1970].push({ ...t });
+          else if (y < 1990) buckets[1980].push({ ...t });
+          else if (y < 2000) buckets[1990].push({ ...t });
+          else if (y < 2010) buckets[2000].push({ ...t });
+          else if (y < 2020) buckets[2010].push({ ...t });
+          else buckets[2020].push({ ...t });
+        }
+
+        // Shuffle within each decade bucket
+        for (const key of Object.keys(buckets)) {
+          const list = buckets[key];
+          for (let i = list.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [list[i], list[j]] = [list[j], list[i]];
+          }
+        }
+
+        const eraKeys = [1970, 1980, 1990, 2000, 2010, 2020];
+        let startOffset = Math.floor(Math.random() * eraKeys.length);
+        const deck = [];
+
+        while (true) {
+          let added = false;
+          for (let i = 0; i < eraKeys.length; i++) {
+            const k = eraKeys[(startOffset + i) % eraKeys.length];
+            if (buckets[k].length > 0) {
+              deck.push(buckets[k].pop());
+              added = true;
+            }
+          }
+          if (!added) break;
+        }
+
+        return deduplicateTracks(deck);
+      }
+
       // 1. Guaranteed iconic mega-hit categories:
       // Always draw from the curated verified hits pool (100% universal fame, no obscure tracks)
       const isCuratedHitCategory = ['kpop_hits', 'kpop_retro', 'pop_hits', 'jpop_hits'].includes(musicSource);
