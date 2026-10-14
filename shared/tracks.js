@@ -1212,8 +1212,10 @@ function deduplicateCatalog(items) {
       map.set(key, {
         ...existing,
         ...item,
-        previewUrl: item.previewUrl || existing.previewUrl,
-        coverUrl: item.coverUrl || existing.coverUrl,
+        id: existing.id || item.id,
+        category: existing.category || item.category,
+        previewUrl: existing.previewUrl || item.previewUrl,
+        coverUrl: existing.coverUrl || item.coverUrl,
         spotifyUrl: item.spotifyUrl || existing.spotifyUrl,
         aliases: {
           title: titleAliases,

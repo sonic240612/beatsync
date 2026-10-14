@@ -132,7 +132,7 @@ type Store = {
   toggleMode: () => void;
   setVolume: (volume: number) => void;
   connect: () => Promise<void>;
-  createRoom: (name: string, options?: { musicSource?: MusicSource }) => Promise<boolean>;
+  createRoom: (name: string, options?: { musicSource?: MusicSource; mode?: 'speed' | 'timeline' }) => Promise<boolean>;
   joinRoom: (name: string, code: string) => Promise<boolean>;
   leaveRoom: () => Promise<void>;
   configure: (settings: Partial<Settings>) => Promise<boolean>;
@@ -390,7 +390,11 @@ export const useGame = create<Store>((set, get) => ({
   },
 
   createRoom: async (name, options) => {
-    const result = await get().request('room:create', { name, musicSource: options?.musicSource || 'kpop_hits' });
+    const result = await get().request('room:create', {
+      name,
+      musicSource: options?.musicSource || 'kpop_hits',
+      mode: options?.mode || (options?.musicSource === 'timeline_all' ? 'timeline' : 'speed'),
+    });
     if (result?.ok && result.state) {
       const state = result.state as RoomState;
       const playerId = typeof result.playerId === 'string' ? result.playerId : '';

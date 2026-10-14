@@ -226,7 +226,10 @@ export default function Home() {
                   addToast('먼저 닉네임을 입력해주세요.', 'warning');
                   return;
                 }
-                act(() => createRoom(name.trim(), { musicSource: selectedSource }));
+                act(() => createRoom(name.trim(), {
+                  musicSource: selectedSource,
+                  mode: selectedSource === 'timeline_all' ? 'timeline' : 'speed',
+                }));
               }}
               data-liquid-surface
               className="liquid-glass-card p-6 sm:p-8 flex flex-col justify-between"
@@ -459,7 +462,11 @@ export default function Home() {
                     disabled={!isHost}
                     value={state.settings.musicSource || 'kpop_hits'}
                     onChange={val => {
-                      configure({ musicSource: val });
+                      if (val === 'timeline_all' && state.settings.mode !== 'timeline') {
+                        configure({ musicSource: val, mode: 'timeline' });
+                      } else {
+                        configure({ musicSource: val });
+                      }
                     }}
                     options={MUSIC_SOURCE_OPTIONS}
                   />

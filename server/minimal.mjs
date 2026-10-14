@@ -79,19 +79,38 @@ const readName = data => {
 const readCode = value => String(value ?? '').trim().toUpperCase();
 const identity = () => ({ playerId: randomBytes(8).toString('hex'), token: randomBytes(16).toString('hex') });
 
+export const VALID_MUSIC_SOURCES = [
+  'timeline_all',
+  'kpop_hits',
+  'kpop_retro',
+  'kpop_all',
+  'pop_hits',
+  'jpop_hits',
+  'pop_all',
+  'jpop_all',
+  'spotify_random',
+  'spotify_playlist'
+];
+
 io.on('connection', (socket) => {
   const guard = (fn) => async (data, ack) => {
-    if (typeof ack !== 'function') return;
+    let payload = data;
+    let callback = ack;
+    if (typeof data === 'function' && !ack) {
+      callback = data;
+      payload = undefined;
+    }
+    if (typeof callback !== 'function') return;
     try {
-      const result = await fn(data);
-      ack({ ok: true, ...(result || {}) });
+      const result = await fn(payload);
+      callback({ ok: true, ...(result || {}) });
     } catch (error) {
-      ack({ ok: false, error: error.message });
+      callback({ ok: false, error: error.message });
     }
   };
   const toAck = (result) => {
     if (result && typeof result === 'object' && 'ok' in result && result.ok === false) return result;
-    return { ok: true };
+    return { ok: true, ...(result || {}) };
   };
   const enter = (room, player) => {
     socket.data.code = room.code; socket.data.playerId = player.id; player.socketId = socket.id;
@@ -103,7 +122,28 @@ io.on('connection', (socket) => {
     if (rooms.size >= 100) throw Error('방이 가득 찼습니다.');
     let code; do { code = randomBytes(3).toString('hex').toUpperCase(); } while (rooms.has(code));
     const { playerId, token } = identity();
-    const room = { code, phase: 'lobby', hostId: playerId, creatorId: playerId, settings: { mode: 'speed', target: 'both', rounds: 10, targetCards: 10, snippetSeconds: 15, musicSource: data?.musicSource || 'kpop_hits', playlistUrl: '' }, players: [{ id: playerId, name: readName(data), token, connected: true, disconnectedAt: 0, socketId: '' }] };
+    const initialSource = (data?.musicSource && VALID_MUSIC_SOURCES.includes(data.musicSource))
+      ? data.musicSource
+      : 'kpop_hits';
+    const initialMode = (data?.mode && ['speed', 'timeline'].includes(data.mode))
+      ? data.mode
+      : (initialSource === 'timeline_all' ? 'timeline' : 'speed');
+    const room = {
+      code,
+      phase: 'lobby',
+      hostId: playerId,
+      creatorId: playerId,
+      settings: {
+        mode: initialMode,
+        target: 'both',
+        rounds: 10,
+        targetCards: 10,
+        snippetSeconds: 15,
+        musicSource: initialSource,
+        playlistUrl: ''
+      },
+      players: [{ id: playerId, name: readName(data), token, connected: true, disconnectedAt: 0, socketId: '' }]
+    };
     rooms.set(code, room);
     enter(room, room.players[0]);
     return { playerId, token, state: publicRoom(room) };
@@ -172,8 +212,7 @@ io.on('connection', (socket) => {
       if (!Number.isInteger(tc) || tc < 8 || tc > 20) throw Error('타임라인 승리 목표 카드 수는 8~20장 사이여야 합니다.');
     }
     if (snippetSeconds && ![5, 15, 30].includes(snippetSeconds)) throw Error('재생 시간은 5, 15, 30초 중 하나입니다.');
-    const validSources = ['kpop_hits', 'kpop_retro', 'kpop_all', 'pop_hits', 'jpop_hits', 'pop_all', 'jpop_all', 'spotify_random', 'spotify_playlist'];
-    if (musicSource && !validSources.includes(musicSource)) throw Error('음악 소스를 확인해주세요.');
+    if (musicSource && !VALID_MUSIC_SOURCES.includes(musicSource)) throw Error('음악 소스를 확인해주세요.');
 
     if (playlistUrl !== undefined) {
       const trimmedUrl = String(playlistUrl).trim();
@@ -191,9 +230,11 @@ io.on('connection', (socket) => {
       }
     }
 
+    const resolvedMode = mode || (musicSource === 'timeline_all' && room.settings.mode === 'speed' ? 'timeline' : undefined);
+
     room.settings = {
       ...room.settings,
-      ...(mode ? { mode } : {}),
+      ...(resolvedMode ? { mode: resolvedMode } : {}),
       ...(target ? { target } : {}),
       ...(rounds ? { rounds } : {}),
       ...(targetCards !== undefined ? { targetCards: Number(targetCards) } : {}),
