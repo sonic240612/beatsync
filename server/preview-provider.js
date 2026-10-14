@@ -120,8 +120,13 @@ export function createTrackProvider(baseUrl, options = {}) {
       const safeBase = (baseUrl && !baseUrl.includes('127.0.0.1') && !baseUrl.includes('localhost'))
         ? baseUrl.replace(/\/+$/, '')
         : '';
+      const params = new URLSearchParams();
+      if (track.title) params.set('title', track.title);
+      if (track.artist) params.set('artist', track.artist);
+      if (startSeconds) params.set('start', String(startSeconds));
+      const qs = params.toString() ? `?${params.toString()}` : '';
       return {
-        url: `${safeBase}/api/audio/${encodeURIComponent(track.id)}?start=${startSeconds}`,
+        url: `${safeBase}/api/audio/${encodeURIComponent(track.id)}${qs}`,
         startSeconds,
       };
     },

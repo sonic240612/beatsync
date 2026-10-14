@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '@/lib/game';
 import { VolumeControl } from '@/components/volume-control';
+import { resolveClientAudioPreview } from '@/lib/audio-fallback';
 
 function useCountdown(endsAt?: number) {
   const [left, setLeft] = useState(0);
@@ -112,6 +113,33 @@ export default function SpeedMode() {
     }
   }, [state?.preview?.url, activeReveal, round]);
 
+  const handleAudioError = async () => {
+    const el = audio.current;
+    if (!el || !state?.preview?.url) return;
+
+    try {
+      const urlObj = new URL(state.preview.url, window.location.origin);
+      const urlTitle = urlObj.searchParams.get('title') || '';
+      const urlArtist = urlObj.searchParams.get('artist') || '';
+
+      if (urlTitle || urlArtist) {
+        const fallbackUrl = await resolveClientAudioPreview(urlTitle, urlArtist);
+        if (fallbackUrl && el.src !== fallbackUrl) {
+          el.src = fallbackUrl;
+          el.currentTime = 0;
+          el.play()
+            .then(() => {
+              setAudioBlocked(false);
+              setIsPlaying(true);
+            })
+            .catch(() => {
+              setAudioBlocked(true);
+            });
+        }
+      }
+    } catch {}
+  };
+
   const handleManualPlay = () => {
     const el = audio.current;
     if (el && state?.preview?.url) {
@@ -128,7 +156,7 @@ export default function SpeedMode() {
           setIsPlaying(true);
         })
         .catch(() => {
-          setAudioBlocked(true);
+          handleAudioError();
         });
     }
   };
@@ -148,8 +176,7 @@ export default function SpeedMode() {
         setAudioEnded(false);
       })
       .catch(() => {
-        setAudioBlocked(true);
-        setIsPlaying(false);
+        handleAudioError();
       });
   };
 
@@ -286,6 +313,7 @@ export default function SpeedMode() {
           setIsPlaying(false);
           setAudioEnded(true);
         }}
+        onError={handleAudioError}
       />
 
       {/* Header Info */}

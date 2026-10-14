@@ -86,7 +86,7 @@ export default function PracticePage() {
     }
   }, [selectedTrack]);
 
-  const audioSrc = `/api/audio/${selectedTrack.id}`;
+  const audioSrc = selectedTrack.previewUrl || `/api/audio/${selectedTrack.id}?title=${encodeURIComponent(selectedTrack.title)}&artist=${encodeURIComponent(selectedTrack.artist)}`;
 
   // Sync volume changes to audio element
   useEffect(() => {

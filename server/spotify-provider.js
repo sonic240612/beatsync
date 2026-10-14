@@ -206,8 +206,9 @@ function normalizeForMatch(str) {
 
 export function cleanTrackTitle(title) {
   return String(title || '')
-    .replace(/\s*[-–—]\s*(?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|radio edit|original mix|mono|stereo|deluxe|version).*$/i, '')
-    .replace(/\s*[\(\[](?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|mono|stereo|deluxe|feat\.?.*|ft\.?.*|cv\.?.*)[\)\]]/gi, '')
+    .replace(/\s*[\(\[\{（［｛【](?:feat\.?|ft\.?|with|prod\.?|remaster(?:ed)?|live|ver(?:sion)?|clean|explicit|radio|edit|ost|original|inst(?:rumental)?).*?[\)\]\}）］｝】]/gi, ' ')
+    .replace(/\s*[-–—]\s*(?:(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?|live|radio edit|original mix|mono|stereo|deluxe|version|feat\.?|ft\.?|clean|explicit).*$/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -716,8 +717,10 @@ export async function resolveAudioPreview(title, artist, optionsOrTitleAliases =
     try {
       const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(`${cleanTitleInput} ${cleanArtistInput}`);
       const queries = [
-        { term: `${cleanArtistInput} ${cleanTitleInput}` },
         { term: `${firstArtist} ${cleanTitle}` },
+        { term: `${cleanArtistInput} ${cleanTitleInput}` },
+        { term: `${cleanTitle} ${firstArtist}` },
+        { term: `${cleanTitle}` },
       ];
 
       if (hasJapanese) {

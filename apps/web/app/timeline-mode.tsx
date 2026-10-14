@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, type TimelineEntry } from '@/lib/game';
 import { tracks as staticTracks } from '@/shared/tracks.js';
 import { VolumeControl } from '@/components/volume-control';
+import { resolveClientAudioPreview } from '@/lib/audio-fallback';
 
 function useCountdown(endsAt?: number) {
   const [left, setLeft] = useState(0);
@@ -134,6 +135,33 @@ export default function TimelineMode() {
     }
   }, [state?.preview?.url, activeReveal, round]);
 
+  const handleAudioError = async () => {
+    const el = audio.current;
+    if (!el || !state?.preview?.url) return;
+
+    try {
+      const urlObj = new URL(state.preview.url, window.location.origin);
+      const urlTitle = urlObj.searchParams.get('title') || '';
+      const urlArtist = urlObj.searchParams.get('artist') || '';
+
+      if (urlTitle || urlArtist) {
+        const fallbackUrl = await resolveClientAudioPreview(urlTitle, urlArtist);
+        if (fallbackUrl && el.src !== fallbackUrl) {
+          el.src = fallbackUrl;
+          el.currentTime = 0;
+          el.play()
+            .then(() => {
+              setAudioBlocked(false);
+              setIsPlaying(true);
+            })
+            .catch(() => {
+              setAudioBlocked(true);
+            });
+        }
+      }
+    } catch {}
+  };
+
   const handleManualPlay = () => {
     const el = audio.current;
     if (el && state?.preview?.url) {
@@ -150,7 +178,7 @@ export default function TimelineMode() {
           setIsPlaying(true);
         })
         .catch(() => {
-          setAudioBlocked(true);
+          handleAudioError();
         });
     }
   };
@@ -457,6 +485,7 @@ export default function TimelineMode() {
           setIsPlaying(false);
           setAudioEnded(true);
         }}
+        onError={handleAudioError}
       />
 
       {/* Header Info */}
