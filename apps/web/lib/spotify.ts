@@ -84,12 +84,32 @@ const STORAGE_KEY_CLIENT_ID = 'beatsync_spotify_client_id';
 export function getStoredProfile(): SpotifyProfile | null {
   if (typeof window === 'undefined') return null;
   const raw = localStorage.getItem(STORAGE_KEY_PROFILE);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.displayName) {
+        return parsed;
+      }
+    } catch {}
   }
+  // Fallback: If we have an active non-expired OAuth token, we are logged in!
+  const token = getStoredToken();
+  if (token) {
+    const fallbackName = localStorage.getItem('beatsync-name') || 'Spotify 사용자';
+    const fallback: SpotifyProfile = {
+      id: 'spotify-oauth-user',
+      displayName: fallbackName,
+      genres: ['kpop', 'pop', 'retro'],
+      savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
+      connectedAt: Date.now(),
+      isOAuth: true,
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(fallback));
+    } catch {}
+    return fallback;
+  }
+  return null;
 }
 
 /**
@@ -221,8 +241,18 @@ export function saveSpotifySession(token: string, refreshToken = '', expiresInSe
   if (expiresInSeconds) {
     localStorage.setItem(STORAGE_KEY_EXPIRES, String(Date.now() + expiresInSeconds * 1000));
   }
-  if (profile) {
-    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+  const existing = getStoredProfile();
+  const profileToSave: SpotifyProfile = profile || existing || {
+    id: `spotify-user-${Date.now().toString(36)}`,
+    displayName: (typeof window !== 'undefined' ? localStorage.getItem('beatsync-name') : null) || 'Spotify 사용자',
+    genres: ['kpop', 'pop', 'retro'],
+    savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
+    connectedAt: Date.now(),
+    isOAuth: true,
+  };
+  localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profileToSave));
+  if (profileToSave.displayName) {
+    localStorage.setItem('beatsync-name', profileToSave.displayName);
   }
 }
 
@@ -238,7 +268,8 @@ export async function initiateSpotifyLogin(customClientId?: string): Promise<{ o
     const challenge = await generateCodeChallenge(verifier);
     localStorage.setItem(STORAGE_KEY_VERIFIER, verifier);
     const redirectUri = `${window.location.origin}/callback`;
-    const scopes = 'user-read-private user-read-email playlist-read-private user-top-read user-library-read';
+    // Clean, universally supported Spotify scopes without restricted endpoints
+    const scopes = 'user-read-private user-read-email playlist-read-private';
     const params = new URLSearchParams({
       client_id: clientId,
       response_type: 'code',
@@ -276,13 +307,23 @@ export async function handleSpotifyCallback(code: string): Promise<{ ok: boolean
     });
     const data = await response.json();
     if (!response.ok || !data.access_token) {
-      return { ok: false, error: data.error_description || '토큰 발급 실패' };
+      return { ok: false, error: data.error_description || data.error || '토큰 발급 실패' };
     }
     const token = data.access_token;
-    const profile = await fetchSpotifyProfile(token);
-    saveSpotifySession(token, data.refresh_token, data.expires_in, profile || undefined);
+    let profile = await fetchSpotifyProfile(token);
+    if (!profile) {
+      profile = {
+        id: `spotify-user-${Date.now().toString(36)}`,
+        displayName: localStorage.getItem('beatsync-name') || 'Spotify 사용자',
+        genres: ['kpop', 'pop', 'retro'],
+        savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
+        connectedAt: Date.now(),
+        isOAuth: true,
+      };
+    }
+    saveSpotifySession(token, data.refresh_token, data.expires_in, profile);
     localStorage.removeItem(STORAGE_KEY_VERIFIER);
-    return { ok: true, profile: profile || undefined };
+    return { ok: true, profile };
   } catch (err: any) {
     return { ok: false, error: err?.message || '콜백 처리 실패' };
   }
@@ -293,24 +334,34 @@ export async function fetchSpotifyProfile(token: string): Promise<SpotifyProfile
     const res = await fetch('https://api.spotify.com/v1/me', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn('Failed to fetch /v1/me status:', res.status);
+      return null;
+    }
     const data = await res.json();
-    const userPlaylists = await fetchUserPlaylists(token);
+    let userPlaylists: SpotifyPlaylistItem[] = DEFAULT_PRESET_PLAYLISTS;
+    try {
+      const pl = await fetchUserPlaylists(token);
+      if (Array.isArray(pl) && pl.length > 0) userPlaylists = pl;
+    } catch (e) {
+      console.warn('Failed to fetch playlists:', e);
+    }
     const existing = getStoredProfile();
-    const avatarUrl = data.images?.[0]?.url || '';
+    const avatarUrl = Array.isArray(data.images) && data.images[0]?.url ? data.images[0].url : '';
     return {
-      id: data.id,
-      displayName: data.display_name || data.id,
+      id: data.id || 'spotify-user',
+      displayName: data.display_name || data.id || 'Spotify 사용자',
       avatarUrl,
-      images: data.images || [],
-      email: data.email,
-      product: data.product,
+      images: Array.isArray(data.images) ? data.images : [],
+      email: data.email || '',
+      product: data.product || '',
       genres: existing?.genres || ['kpop', 'pop', 'retro'],
-      savedPlaylists: userPlaylists?.length ? userPlaylists : DEFAULT_PRESET_PLAYLISTS,
+      savedPlaylists: userPlaylists,
       connectedAt: Date.now(),
       isOAuth: true,
     };
-  } catch {
+  } catch (err) {
+    console.error('fetchSpotifyProfile error:', err);
     return null;
   }
 }
@@ -322,14 +373,16 @@ export async function fetchUserPlaylists(token: string): Promise<SpotifyPlaylist
     });
     if (!res.ok) return DEFAULT_PRESET_PLAYLISTS;
     const data = await res.json();
-    return (data.items || []).map((p: any) => ({
-      id: p.id,
-      name: p.name || 'Untitled Playlist',
-      description: p.description || '',
-      images: p.images || [],
-      tracks: { total: p.tracks?.total || 0 },
+    const items = Array.isArray(data.items) ? data.items.filter(Boolean) : [];
+    const parsed = items.map((p: any) => ({
+      id: String(p.id || ''),
+      name: String(p.name || 'Untitled Playlist'),
+      description: String(p.description || ''),
+      images: Array.isArray(p.images) ? p.images : [],
+      tracks: { total: Number(p.tracks?.total || 0) },
       url: p.external_urls?.spotify || `https://open.spotify.com/playlist/${p.id}`,
-    }));
+    })).filter((p: any) => p.id);
+    return parsed.length > 0 ? parsed : DEFAULT_PRESET_PLAYLISTS;
   } catch {
     return DEFAULT_PRESET_PLAYLISTS;
   }

@@ -64,6 +64,19 @@ export default function Home() {
     if (prof?.displayName && !stored) {
       setName(prof.displayName);
     }
+
+    const refreshProfile = () => {
+      const p = getStoredProfile();
+      setSpotifyProfile(p);
+      const s = localStorage.getItem('beatsync-name');
+      if (s) setName(s);
+    };
+    window.addEventListener('storage', refreshProfile);
+    window.addEventListener('focus', refreshProfile);
+    return () => {
+      window.removeEventListener('storage', refreshProfile);
+      window.removeEventListener('focus', refreshProfile);
+    };
   }, []);
 
   useEffect(() => {
@@ -152,7 +165,10 @@ export default function Home() {
           {/* Spotify Account Button */}
           <button
             type="button"
-            onClick={() => setIsSpotifyModalOpen(true)}
+            onClick={() => {
+              setSpotifyProfile(getStoredProfile());
+              setIsSpotifyModalOpen(true);
+            }}
             className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-bold text-emerald-300 transition-all shadow-sm cursor-pointer"
             title="Spotify 계정 연동 및 플레이리스트 보관함"
           >
@@ -856,6 +872,12 @@ export default function Home() {
         onClose={() => {
           setIsSpotifyModalOpen(false);
           setSpotifyProfile(getStoredProfile());
+        }}
+        onProfileChange={prof => {
+          setSpotifyProfile(prof);
+          if (prof?.displayName) {
+            setName(prof.displayName);
+          }
         }}
         onSelectPlaylist={url => {
           setPlaylistInput(url);

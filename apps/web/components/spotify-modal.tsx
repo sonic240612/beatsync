@@ -19,9 +19,10 @@ interface SpotifyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectPlaylist?: (playlistUrl: string) => void;
+  onProfileChange?: (profile: SpotifyProfile | null) => void;
 }
 
-export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModalProps) {
+export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChange }: SpotifyModalProps) {
   const { addToast } = useGame();
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
   const [loadingOAuth, setLoadingOAuth] = useState(false);
@@ -53,6 +54,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
       if (profile) {
         const updated = updateProfileGenres(next);
         setProfile(updated);
+        onProfileChange?.(updated);
       }
       return next;
     });
@@ -82,6 +84,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
     }
     const userProfile = simpleLogin(trimmed, selectedGenres);
     setProfile(userProfile);
+    onProfileChange?.(userProfile);
     if (typeof window !== 'undefined') {
       localStorage.setItem('beatsync-name', trimmed);
     }
@@ -97,6 +100,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
       url: newPlaylistUrl.trim(),
     });
     setProfile(updated);
+    onProfileChange?.(updated);
     setNewPlaylistUrl('');
     setNewPlaylistName('');
     addToast('플레이리스트가 보관함에 추가되었습니다!', 'success');
@@ -105,6 +109,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
   const handleRemovePlaylist = (id: string) => {
     const updated = removeSavedPlaylist(id);
     setProfile(updated);
+    onProfileChange?.(updated);
     addToast('플레이리스트가 보관함에서 삭제되었습니다.', 'info');
   };
 
@@ -119,6 +124,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
   const handleLogout = () => {
     clearSpotifySession();
     setProfile(null);
+    onProfileChange?.(null);
     addToast('Spotify 연동이 해제되었습니다.', 'info');
   };
 
@@ -165,30 +171,48 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
           /* ==================================================== */
           <div className="space-y-5">
             {/* User Profile Card */}
-            <div className="flex items-center gap-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-sm">
-              {profile.avatarUrl ? (
-                <img
-                  src={profile.avatarUrl}
-                  alt={profile.displayName}
-                  className="h-12 w-12 rounded-full object-cover border-2 border-emerald-400 shrink-0 shadow-md"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/30 border border-emerald-400/40 text-xl font-bold text-emerald-200 shrink-0">
-                  {profile.displayName.slice(0, 1)}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white truncate">{profile.displayName}</h3>
-                  {profile.product && (
-                    <span className="rounded-md bg-white/10 border border-white/20 px-1.5 py-0.5 text-[10px] font-mono uppercase text-slate-300">
-                      {profile.product}
-                    </span>
-                  )}
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-bold text-emerald-300">현재 로그인된 Spotify 계정</span>
                 </div>
-                <p className="text-xs text-slate-300 truncate mt-0.5">
-                  {profile.email ? profile.email : 'Spotify 계정이 성공적으로 연결되었습니다'}
-                </p>
+                {profile.isOAuth ? (
+                  <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                    공식 연동 활성화
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-slate-700/60 border border-slate-600 px-2 py-0.5 text-[10px] font-medium text-slate-300">
+                    게스트 프로필
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3.5">
+                {profile.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={profile.displayName}
+                    className="h-12 w-12 rounded-full object-cover border-2 border-emerald-400 shrink-0 shadow-md"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/30 border border-emerald-400/40 text-xl font-bold text-emerald-200 shrink-0">
+                    {profile.displayName.slice(0, 1)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white truncate">{profile.displayName}</h3>
+                    {profile.product && (
+                      <span className="rounded-md bg-white/10 border border-white/20 px-1.5 py-0.5 text-[10px] font-mono uppercase text-slate-300">
+                        {profile.product}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 truncate mt-0.5">
+                    {profile.email ? profile.email : 'Spotify 계정이 연동되어 있습니다'}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -309,9 +333,10 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist }: SpotifyModal
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition-colors"
+                className="rounded-xl border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 px-4 py-3 text-xs sm:text-sm font-bold text-rose-200 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
-                연동 해제
+                <span>🚪</span>
+                <span>연동 해제 (로그아웃)</span>
               </button>
             </div>
           </div>

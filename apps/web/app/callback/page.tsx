@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { handleSpotifyCallback } from '@/lib/spotify';
 
@@ -9,23 +9,28 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Spotify 계정 인증 처리 중입니다…');
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    if (processedRef.current) return;
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
     if (error) {
+      processedRef.current = true;
       setStatus('error');
       setMessage(`Spotify 인증이 취소되었거나 실패했습니다: ${error}`);
       return;
     }
 
     if (!code) {
+      processedRef.current = true;
       setStatus('error');
       setMessage('인증 코드를 찾을 수 없습니다.');
       return;
     }
 
+    processedRef.current = true;
     handleSpotifyCallback(code).then(res => {
       if (res.ok) {
         setStatus('success');
@@ -35,14 +40,14 @@ function CallbackContent() {
             : 'Spotify 계정이 성공적으로 연동되었습니다.'
         );
         setTimeout(() => {
-          router.replace('/');
-        }, 1200);
+          window.location.href = '/';
+        }, 800);
       } else {
         setStatus('error');
         setMessage(res.error || 'Spotify 로그인 처리 중 문제가 발생했습니다.');
       }
     });
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 py-12">
