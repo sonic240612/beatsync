@@ -62,6 +62,17 @@ import {
   // Mismatched titles must return false
   assert.equal(isTitleMatching('좋은 날', 'Congratulations'), false);
   assert.equal(isTitleMatching('Sugar', 'Animals'), false);
+
+  // Unwanted localized language versions must NOT match original songs
+  assert.equal(isTitleMatching('I AM', 'I AM -Japanese version-'), false);
+  assert.equal(isTitleMatching('미스터', 'Mister (Japanese Version)'), false);
+  assert.equal(isTitleMatching('CHEER UP', 'CHEER UP -Japanese ver.-'), false);
+  assert.equal(isTitleMatching('TT', 'TT -Japanese ver.-'), false);
+  assert.equal(isTitleMatching('DDU-DU DDU-DU', 'DDU-DU DDU-DU -JP Ver.-'), false);
+  assert.equal(isTitleMatching('アイドル', 'Idol (English Version)'), false);
+
+  // Overly broad substring matches must NOT match completely different songs
+  assert.equal(isTitleMatching('미스터', 'Mister Music', ['mister']), false);
 }
 
 // 4. ResolveAudioPreview integration test

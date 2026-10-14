@@ -507,16 +507,79 @@ const KNOWN_TITLE_TRANSLATIONS = {
   '애상': ['sorrow'],
 };
 
+/**
+ * Check if candidate track is a localized translated version (e.g. Japanese or English version of a Korean track)
+ * when the original track version was requested.
+ */
+export function isUnwantedLanguageVersion(expectedTitle, candidateTitle, candidateAlbum = '') {
+  const exp = String(expectedTitle || '').toLowerCase();
+  const cand = String(candidateTitle || '').toLowerCase();
+  const alb = String(candidateAlbum || '').toLowerCase();
+  const combined = `${cand} ${alb}`;
+
+  // 1. Japanese localized version check
+  // Matches e.g.: "Japanese Ver", "Japanese Version", "-JP Ver.-", "(JP Ver)", "日本語", "Japan Edition"
+  const candHasJp = /\b(?:japanese\s*ver(?:sion)?|jp\s*ver(?:sion)?|japan\s*(?:ver(?:sion)?|edition))\b/i.test(combined) ||
+    /[-–—\(\[\{/]\s*(?:jp|japanese|日本語|일본어)\s*(?:ver(?:sion)?|edit)?[-\)\]\}/]/i.test(combined) ||
+    /\((?:japanese|jp\s*ver|日本語)\)/i.test(combined) ||
+    /[-–—]\s*japanese\s*version/i.test(combined);
+
+  const expWantsJp = /\b(?:japanese|jp\s*ver|일본어|日本語)\b/i.test(exp);
+
+  if (candHasJp && !expWantsJp) {
+    return true; // Candidate is a Japanese localized version, but original was requested!
+  }
+
+  // 2. English localized version check
+  // Matches e.g.: "(English Ver.)", "English Version", "- Eng Ver -"
+  const candHasEng = /\b(?:english\s*ver(?:sion)?|eng\s*ver(?:sion)?)\b/i.test(combined) ||
+    /[-–—\(\[\{/]\s*(?:eng|english|영어)\s*ver(?:sion)?[-\)\]\}/]/i.test(combined);
+
+  const expWantsEng = /\b(?:english|eng\s*ver|영어)\b/i.test(exp);
+
+  if (candHasEng && !expWantsEng) {
+    return true; // Candidate is an English localized version, but original was requested!
+  }
+
+  // 3. Chinese localized version check
+  const candHasCn = /\b(?:chinese\s*ver(?:sion)?|mandarin\s*ver(?:sion)?|cn\s*ver(?:sion)?)\b/i.test(combined) ||
+    /[-–—\(\[\{/]\s*(?:chinese|mandarin|중국어)\s*ver(?:sion)?[-\)\]\}/]/i.test(combined);
+
+  const expWantsCn = /\b(?:chinese|mandarin|중국어)\b/i.test(exp);
+
+  if (candHasCn && !expWantsCn) {
+    return true; // Candidate is a Chinese localized version!
+  }
+
+  return false;
+}
+
+function isFuzzyOrSafeSubstringMatch(normA, normB) {
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+  if (!normA.includes(normB) && !normB.includes(normA)) return false;
+
+  const [short, long] = normA.length <= normB.length ? [normA, normB] : [normB, normA];
+  if (short.length / long.length >= 0.7) {
+    return true;
+  }
+  const remainder = long.replace(short, '').trim();
+  const remainderWords = remainder.split(/\s+/).filter(Boolean);
+  const auxiliaryTokens = new Set(['remaster', 'remastered', 'edit', 'radio', 'original', 'mix', 'mono', 'stereo', 'deluxe', 'part', 'pt', 'vol', 'volume', 'ost', 'theme', 'single']);
+  return remainderWords.every(w => auxiliaryTokens.has(w) || /^\d+$/.test(w));
+}
+
 export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []) {
   if (!expectedTitle || !candidateTitle) return false;
+  if (isUnwantedLanguageVersion(expectedTitle, candidateTitle)) return false;
+
   const cleanExp = cleanTrackTitle(expectedTitle);
   const cleanCand = cleanTrackTitle(candidateTitle);
   const normExp = normalizeForMatch(cleanExp);
   const normCand = normalizeForMatch(cleanCand);
   if (!normExp || !normCand) return false;
 
-  if (normExp === normCand) return true;
-  if (normExp.includes(normCand) || normCand.includes(normExp)) return true;
+  if (isFuzzyOrSafeSubstringMatch(normExp, normCand)) return true;
 
   const expWords = normExp.split(/\s+/).filter(w => w.length >= 2);
   const candWords = normCand.split(/\s+/).filter(w => w.length >= 2);
@@ -528,13 +591,13 @@ export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []
   // Cross-lingual title translation check
   for (const [kr, enList] of Object.entries(KNOWN_TITLE_TRANSLATIONS)) {
     const normKr = normalizeForMatch(kr);
-    if (normExp.includes(normKr) || normKr.includes(normExp)) {
-      if (enList.some(en => normCand.includes(normalizeForMatch(en)) || normalizeForMatch(en).includes(normCand))) {
+    if (isFuzzyOrSafeSubstringMatch(normExp, normKr)) {
+      if (enList.some(en => isFuzzyOrSafeSubstringMatch(normCand, normalizeForMatch(en)))) {
         return true;
       }
     }
-    if (normCand.includes(normKr) || normKr.includes(normCand)) {
-      if (enList.some(en => normExp.includes(normalizeForMatch(en)) || normalizeForMatch(en).includes(normExp))) {
+    if (isFuzzyOrSafeSubstringMatch(normCand, normKr)) {
+      if (enList.some(en => isFuzzyOrSafeSubstringMatch(normExp, normalizeForMatch(en)))) {
         return true;
       }
     }
@@ -544,7 +607,7 @@ export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []
   const dictExp = JAPANESE_DICTIONARY[cleanExp] || JAPANESE_DICTIONARY[expectedTitle] || [];
   for (const da of dictExp) {
     const nda = normalizeForMatch(da);
-    if (nda && (nda === normCand || normCand.includes(nda) || nda.includes(normCand))) {
+    if (nda && isFuzzyOrSafeSubstringMatch(nda, normCand)) {
       return true;
     }
   }
@@ -553,7 +616,7 @@ export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []
   const kanaRes = kanaToRomajiAndKorean(cleanExp);
   if (kanaRes.romaji) {
     const normRoma = normalizeForMatch(kanaRes.romaji);
-    if (normRoma && (normRoma === normCand || normCand.includes(normRoma) || normRoma.includes(normCand))) {
+    if (normRoma && isFuzzyOrSafeSubstringMatch(normRoma, normCand)) {
       return true;
     }
   }
@@ -562,7 +625,7 @@ export function isTitleMatching(expectedTitle, candidateTitle, extraAliases = []
   if (Array.isArray(extraAliases)) {
     for (const a of extraAliases) {
       const normA = normalizeForMatch(a);
-      if (normA && (normA === normCand || normCand.includes(normA) || normA.includes(normCand))) {
+      if (normA && isFuzzyOrSafeSubstringMatch(normA, normCand)) {
         return true;
       }
     }
@@ -587,6 +650,7 @@ function selectBestCandidate(candidates, expectedTitle, expectedArtist, extraTit
 
     if (!previewUrl) continue;
     if (isKaraokeOrUnwantedTrack(trackName, artistName, albumName)) continue;
+    if (isUnwantedLanguageVersion(expectedTitle, trackName, albumName)) continue;
     if (!isArtistMatching(expectedArtist, artistName, extraArtistAliases)) continue;
     if (!isTitleMatching(expectedTitle, trackName, extraTitleAliases)) continue;
 

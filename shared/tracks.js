@@ -304,6 +304,7 @@ const BASE_TRACKS = [
     category: 'kpop_hits',
     aliases: { title: ['아이엠'], artist: ['아이브'] },
     coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/3a/23/b7/3a23b7f4-0b43-df9d-b7e4-14f992443324/197188335663.jpg/600x600bb.jpg',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/7d/58/dc/7d58dcfe-20ae-643e-d160-2bbb49628383/mzaf_15653119750983230833.plus.aac.p.m4a',
     spotifyUrl: 'https://open.spotify.com/track/708s9f2t9Kz4yF7s7M2J1h',
   },
   {
@@ -661,6 +662,7 @@ const BASE_TRACKS = [
     year: 2009,
     category: 'kpop_retro',
     aliases: { title: ['mister', 'mr.'], artist: ['kara'] },
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/7d/43/0a/7d430a67-626c-5249-874e-401c15a90d18/mzaf_8561594543511679728.plus.aac.p.m4a',
   },
   {
     id: 'kpop-superjunior-sorrysorry',
