@@ -80,7 +80,7 @@ export default function Home() {
 
   const inRoom = !!state;
   const isHost = !!state && state.hostId === me;
-  const inGame = inRoom && state.phase !== 'lobby';
+  const inGame = inRoom && state.phase !== 'lobby' && state.phase !== 'starting';
 
   async function act<T>(fn: () => Promise<T>): Promise<T | undefined> {
     if (busy) return undefined;
@@ -388,7 +388,7 @@ export default function Home() {
           </section>
 
           {/* Lobby Settings Card */}
-          {state.phase === 'lobby' && (
+          {(state.phase === 'lobby' || state.phase === 'starting') && (
             <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-5 sm:space-y-6">
               {/* Settings Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -743,29 +743,51 @@ export default function Home() {
                       return await start();
                     })
                   }
-                  disabled={busy || state.players.filter(p => p.connected).length < 1}
-                  className="liquid-btn-primary w-full py-4 text-base font-black disabled:opacity-40 shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                  disabled={busy || state.phase === 'starting' || state.players.filter(p => p.connected).length < 1}
+                  className="liquid-btn-primary w-full py-4 text-base font-black disabled:opacity-50 shadow-lg cursor-pointer flex items-center justify-center gap-2.5 transition-all disabled:cursor-not-allowed"
                 >
-                  <span>🎮</span>
-                  <span>
-                    {state.players.filter(p => p.connected).length < 1
-                      ? '플레이어가 연결되어 있지 않습니다'
-                      : state.players.filter(p => p.connected).length === 1
-                      ? '1인 솔로 모드로 게임 시작하기'
-                      : `게임 시작하기 (${state.players.filter(p => p.connected).length}명)`}
-                  </span>
+                  {(busy || state.phase === 'starting') ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>게임 준비 및 음원 로딩 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🎮</span>
+                      <span>
+                        {state.players.filter(p => p.connected).length < 1
+                          ? '플레이어가 연결되어 있지 않습니다'
+                          : state.players.filter(p => p.connected).length === 1
+                          ? '1인 솔로 모드로 게임 시작하기'
+                          : `게임 시작하기 (${state.players.filter(p => p.connected).length}명)`}
+                      </span>
+                    </>
+                  )}
                 </button>
               ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-4 text-center text-xs text-slate-300 flex items-center justify-center gap-2 shadow-inner">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>호스트가 게임을 시작할 때까지 잠시만 기다려주세요…</span>
-                </div>
+                state.phase === 'starting' ? (
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-md p-4 text-center text-xs sm:text-sm font-bold text-emerald-300 flex items-center justify-center gap-2.5 shadow-inner">
+                    <svg className="animate-spin h-5 w-5 text-emerald-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>호스트가 게임을 시작했습니다! 라운드를 준비하고 있습니다...</span>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md p-4 text-center text-xs text-slate-300 flex items-center justify-center gap-2 shadow-inner">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>호스트가 게임을 시작할 때까지 잠시만 기다려주세요…</span>
+                  </div>
+                )
               )}
             </section>
           )}
 
           {/* Active Game Modes */}
-          {state.phase !== 'lobby' && (
+          {state.phase !== 'lobby' && state.phase !== 'starting' && (
             state.settings.mode === 'speed' ? <SpeedMode /> : <TimelineMode />
           )}
 

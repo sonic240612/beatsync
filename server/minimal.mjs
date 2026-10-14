@@ -219,56 +219,76 @@ io.on('connection', (socket) => {
     if (room.phase !== 'lobby') throw Error('이미 진행 중입니다.');
     if (room.players.filter(p => p.connected).length < 1) throw Error('플레이어가 최소 1명 이상 필요합니다.');
 
-    const source = room.settings.musicSource || 'kpop_hits';
-    if (source === 'spotify_playlist') {
-      if (room.settings.playlistUrl) {
-        try {
-          const freshTracks = await fetchSpotifyPlaylist(room.settings.playlistUrl, undefined, undefined, room.settings.spotifyUserToken);
-          if (freshTracks && freshTracks.length > 0) {
-            room.customTracks = freshTracks;
-          }
-        } catch (e) {
-          if (!room.customTracks || room.customTracks.length === 0) {
-            throw Error('Spotify 플레이리스트를 불러올 수 없습니다. 공개 플레이리스트 URL인지 확인해주세요.');
-          }
-        }
-      } else {
-        throw Error('Spotify 플레이리스트 URL을 입력하고 [적용] 버튼을 눌러주세요.');
-      }
-    }
-
-    const provider = createTrackProvider(`http://127.0.0.1:${PORT}`, {
-      musicSource: source,
-      playlistUrl: room.settings.playlistUrl,
-      customTracks: source === 'spotify_playlist' ? room.customTracks : null,
-      userToken: room.settings.spotifyUserToken,
-      preferredGenres: room.settings.preferredGenres,
-    });
-    const tracks = await provider.listTracks();
-    for (const t of tracks) {
-      if (t?.id) dynamicTracksMap.set(t.id, t);
-    }
-    const syncProvider = {
-      name: provider.name,
-      listTracks: () => [...tracks],
-      getPreview: (t, s) => provider.getPreview(t, s),
-    };
-
-    const revealMs = process.env.REVEAL_MS
-      ? Number(process.env.REVEAL_MS)
-      : (room.settings.mode === 'speed' ? 60000 : 0);
-
-    room.game = new Game({
-      get players() { return room.players; },
-      emit: (event, payload) => {
-        if (event === 'game:over') { room.phase = 'finished'; io.to(room.code).emit(event, payload); emitState(room); return; }
-        io.to(room.code).emit(event, payload);
-      }
-    }, { config: { ...room.settings }, revealMs, provider: syncProvider });
-    room.phase = 'playing';
-    room.game.start();
+    room.phase = 'starting';
     emitState(room);
-    return {};
+
+    try {
+      const source = room.settings.musicSource || 'kpop_hits';
+      if (source === 'spotify_playlist') {
+        if (room.settings.playlistUrl) {
+          try {
+            const freshTracks = await fetchSpotifyPlaylist(room.settings.playlistUrl, undefined, undefined, room.settings.spotifyUserToken);
+            if (freshTracks && freshTracks.length > 0) {
+              room.customTracks = freshTracks;
+            }
+          } catch (e) {
+            if (!room.customTracks || room.customTracks.length === 0) {
+              throw Error('Spotify 플레이리스트를 불러올 수 없습니다. 공개 플레이리스트 URL인지 확인해주세요.');
+            }
+          }
+        } else {
+          throw Error('Spotify 플레이리스트 URL을 입력하고 [적용] 버튼을 눌러주세요.');
+        }
+      }
+
+      const provider = createTrackProvider(`http://127.0.0.1:${PORT}`, {
+        musicSource: source,
+        playlistUrl: room.settings.playlistUrl,
+        customTracks: source === 'spotify_playlist' ? room.customTracks : null,
+        userToken: room.settings.spotifyUserToken,
+        preferredGenres: room.settings.preferredGenres,
+      });
+      const tracks = await provider.listTracks();
+      for (const t of tracks) {
+        if (t?.id) dynamicTracksMap.set(t.id, t);
+      }
+      const syncProvider = {
+        name: provider.name,
+        listTracks: () => [...tracks],
+        getPreview: (t, s) => provider.getPreview(t, s),
+        prefetch: (t) => {
+          if (!t || t.previewUrl) return;
+          resolveAudioPreview(t.title, t.artist, t.aliases?.title, t.aliases?.artist)
+            .then(res => {
+              if (res?.previewUrl) {
+                t.previewUrl = res.previewUrl;
+                if (res.artworkUrl && !t.coverUrl) t.coverUrl = res.artworkUrl;
+              }
+            })
+            .catch(() => {});
+        },
+      };
+
+      const revealMs = process.env.REVEAL_MS
+        ? Number(process.env.REVEAL_MS)
+        : (room.settings.mode === 'speed' ? 60000 : 0);
+
+      room.game = new Game({
+        get players() { return room.players; },
+        emit: (event, payload) => {
+          if (event === 'game:over') { room.phase = 'finished'; io.to(room.code).emit(event, payload); emitState(room); return; }
+          io.to(room.code).emit(event, payload);
+        }
+      }, { config: { ...room.settings }, revealMs, provider: syncProvider });
+      room.phase = 'playing';
+      room.game.start();
+      emitState(room);
+      return {};
+    } catch (err) {
+      room.phase = 'lobby';
+      emitState(room);
+      throw err;
+    }
   }));
 
   socket.on('game:answer', guard(data => {

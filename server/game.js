@@ -55,29 +55,43 @@ export class Game {
       if (config.mode === 'timeline') this.timelines.set(player.id, this.timelineStart());
     }
     this.startTimer = null;
+    if (this.provider?.prefetch && this.deck.length > 0) {
+      this.provider.prefetch(this.deck[0]);
+      if (this.deck.length > 1) this.provider.prefetch(this.deck[1]);
+    }
   }
   drawNextTrack() {
     if (!this.deck || this.deck.length === 0) return null;
+    let picked = null;
     for (let i = 0; i < this.deck.length; i++) {
       const candidate = this.deck[i];
       const keys = getTrackKeys(candidate);
       if (!keys.some(k => this.usedTrackKeys.has(k))) {
         for (const k of keys) this.usedTrackKeys.add(k);
-        return candidate;
+        picked = candidate;
+        break;
       }
     }
-    // Fallback only if all unique tracks in the deck have been exhausted
-    const prevKeys = new Set(getTrackKeys(this.current?.track));
-    this.usedTrackKeys.clear();
-    for (let i = 0; i < this.deck.length; i++) {
-      const candidate = this.deck[i];
-      const keys = getTrackKeys(candidate);
-      if (this.deck.length <= 1 || !keys.some(k => prevKeys.has(k))) {
-        for (const k of keys) this.usedTrackKeys.add(k);
-        return candidate;
+    if (!picked) {
+      // Fallback only if all unique tracks in the deck have been exhausted
+      const prevKeys = new Set(getTrackKeys(this.current?.track));
+      this.usedTrackKeys.clear();
+      for (let i = 0; i < this.deck.length; i++) {
+        const candidate = this.deck[i];
+        const keys = getTrackKeys(candidate);
+        if (this.deck.length <= 1 || !keys.some(k => prevKeys.has(k))) {
+          for (const k of keys) this.usedTrackKeys.add(k);
+          picked = candidate;
+          break;
+        }
       }
+      if (!picked) picked = this.deck[0];
     }
-    return this.deck[0];
+    if (this.provider?.prefetch && picked) {
+      const upcoming = this.deck.find(t => !getTrackKeys(t).some(k => this.usedTrackKeys.has(k)));
+      if (upcoming) this.provider.prefetch(upcoming);
+    }
+    return picked;
   }
   timelineStart() {
     const picks = [];

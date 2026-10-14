@@ -51,7 +51,7 @@ export type RoundSolvers = {
 
 export type RoomState = {
   code: string;
-  phase: 'lobby' | 'playing' | 'reveal' | 'finished';
+  phase: 'lobby' | 'starting' | 'playing' | 'reveal' | 'finished';
   hostId: string;
   settings: Settings;
   players: Player[];
@@ -291,14 +291,14 @@ export const useGame = create<Store>((set, get) => ({
       socket.on('room:state', (state: RoomState) => {
         const session = readSession();
         set(prev => {
-          const nextReveal = state.phase === 'playing' || state.phase === 'lobby'
+          const nextReveal = state.phase === 'playing' || state.phase === 'lobby' || state.phase === 'starting'
             ? null
             : (state.reveal ?? prev.reveal ?? null);
           return {
             me: prev.me || session?.playerId || null,
             state,
             reveal: nextReveal,
-            over: state.phase === 'lobby' ? null : prev.over,
+            over: (state.phase === 'lobby' || state.phase === 'starting') ? null : prev.over,
           };
         });
       });

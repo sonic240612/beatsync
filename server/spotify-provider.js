@@ -972,27 +972,39 @@ export async function enrichTracksMetadata(tracks) {
       if (!Array.isArray(t.aliases.title)) t.aliases.title = [];
       if (!Array.isArray(t.aliases.artist)) t.aliases.artist = [];
 
-      const trackId = t.id ? String(t.id).replace('spotify-', '').replace('spotify:track:', '') : '';
-      const hasSpotifyTrackId = Boolean(trackId && !trackId.startsWith('t-') && /^[a-zA-Z0-9]{15,30}$/.test(trackId));
-
-      // 1. Fetch official per-track metadata directly from Spotify when a Spotify track ID is present
-      if (hasSpotifyTrackId && (!t.year || !t.coverUrl || !t.previewUrl)) {
-        const spMeta = await fetchSpotifyTrackMeta(trackId);
-        if (spMeta) {
-          if (spMeta.year) t.year = spMeta.year;
-          if (spMeta.coverUrl && !t.coverUrl) t.coverUrl = spMeta.coverUrl;
-          if (spMeta.previewUrl && !t.previewUrl) t.previewUrl = spMeta.previewUrl;
-        }
-      }
-
-      // 2. Apply curated/catalog original release year if this track is a remaster or re-release of an older classic
+      // 1. Apply curated/catalog original release year if this track is a remaster or re-release of an older classic (instant sync)
       const knownOriginalYear = lookupKnownOriginalYear(t.title, t.artist);
       if (knownOriginalYear && (!t.year || knownOriginalYear < t.year)) {
         t.year = knownOriginalYear;
       }
 
-      // 3. Query iTunes/Deezer fallback if year, coverUrl, or previewUrl is missing
-      if (!t.year || !t.coverUrl || !t.previewUrl) {
+      // 2. Extract year from title if missing (e.g. "Song (1998)")
+      if (!t.year) {
+        const titleWithoutRemaster = String(t.title || '').replace(
+          /\b(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?\b/gi,
+          ''
+        );
+        const yearMatch = titleWithoutRemaster.match(/\b(19\d\d|20[0-2]\d)\b/);
+        if (yearMatch) {
+          t.year = parseInt(yearMatch[1], 10);
+        }
+      }
+
+      const trackId = t.id ? String(t.id).replace('spotify-', '').replace('spotify:track:', '') : '';
+      const hasSpotifyTrackId = Boolean(trackId && !trackId.startsWith('t-') && /^[a-zA-Z0-9]{15,30}$/.test(trackId));
+
+      // 3. Fetch official per-track metadata directly from Spotify only when year or cover is missing
+      if (hasSpotifyTrackId && (!t.year || !t.coverUrl)) {
+        const spMeta = await fetchSpotifyTrackMeta(trackId);
+        if (spMeta) {
+          if (spMeta.year && !t.year) t.year = spMeta.year;
+          if (spMeta.coverUrl && !t.coverUrl) t.coverUrl = spMeta.coverUrl;
+          if (spMeta.previewUrl && !t.previewUrl) t.previewUrl = spMeta.previewUrl;
+        }
+      }
+
+      // 4. Query iTunes/Deezer fallback ONLY if year is still missing after all above checks
+      if (!t.year) {
         const res = await resolveAudioPreview(t.title, t.artist, t.aliases?.title, t.aliases?.artist);
         if (res) {
           if (!t.year && res.year) t.year = res.year;
@@ -1007,25 +1019,13 @@ export async function enrichTracksMetadata(tracks) {
         }
       }
 
-      // 4. Fallback for cover: Spotify oEmbed or playlist cover
+      // 5. Fallback for cover: Spotify oEmbed or playlist cover
       if (!t.coverUrl && hasSpotifyTrackId) {
         const oembedCover = await fetchSpotifyTrackCover(trackId);
         if (oembedCover) t.coverUrl = oembedCover;
       }
       if (!t.coverUrl && t.playlistCoverUrl) {
         t.coverUrl = t.playlistCoverUrl;
-      }
-
-      // 5. Fallback for year: extract non-remaster year from title if present (e.g. "Song (1998)")
-      if (!t.year) {
-        const titleWithoutRemaster = String(t.title || '').replace(
-          /\b(?:\d{4}\s*)?remaster(?:ed)?(?:\s*\d{4})?\b/gi,
-          ''
-        );
-        const yearMatch = titleWithoutRemaster.match(/\b(19\d\d|20[0-2]\d)\b/);
-        if (yearMatch) {
-          t.year = parseInt(yearMatch[1], 10);
-        }
       }
 
       // 6. Final fallback if still missing

@@ -42,7 +42,6 @@ export function createTrackProvider(baseUrl, options = {}) {
           const j = Math.floor(Math.random() * (i + 1));
           [hitPool[i], hitPool[j]] = [hitPool[j], hitPool[i]];
         }
-        await enrichTracksMetadata(hitPool);
         return hitPool;
       }
 
@@ -105,7 +104,6 @@ export function createTrackProvider(baseUrl, options = {}) {
         return true;
       });
       const fallbackList = deduplicateTracks((filtered.length ? filtered : catalog).map(t => ({ ...t })));
-      await enrichTracksMetadata(fallbackList);
       for (let i = fallbackList.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [fallbackList[i], fallbackList[j]] = [fallbackList[j], fallbackList[i]];
