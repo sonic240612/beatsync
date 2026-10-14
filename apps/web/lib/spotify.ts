@@ -28,6 +28,8 @@ export interface SpotifyProfile {
   email?: string;
   product?: string;
   isOAuth?: boolean;
+  authError?: 'forbidden_users_access' | string;
+  likedTracksCount?: number;
 }
 
 export const SPOTIFY_GENRE_OPTIONS = [
@@ -268,8 +270,8 @@ export async function initiateSpotifyLogin(customClientId?: string): Promise<{ o
     const challenge = await generateCodeChallenge(verifier);
     localStorage.setItem(STORAGE_KEY_VERIFIER, verifier);
     const redirectUri = `${window.location.origin}/callback`;
-    // Clean, universally supported Spotify scopes without restricted endpoints
-    const scopes = 'user-read-private user-read-email playlist-read-private';
+    // Clean, comprehensive scopes for reading user profile and playlists
+    const scopes = 'user-read-private user-read-email playlist-read-private playlist-read-collaborative user-library-read';
     const params = new URLSearchParams({
       client_id: clientId,
       response_type: 'code',
@@ -277,6 +279,7 @@ export async function initiateSpotifyLogin(customClientId?: string): Promise<{ o
       scope: scopes,
       code_challenge_method: 'S256',
       code_challenge: challenge,
+      show_dialog: 'true',
     });
     window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
     return { ok: true };
@@ -330,12 +333,59 @@ export async function handleSpotifyCallback(code: string): Promise<{ ok: boolean
 }
 
 export async function fetchSpotifyProfile(token: string): Promise<SpotifyProfile | null> {
+  // 1. Try our server-side proxy route first (bypasses browser adblockers and CORS)
+  try {
+    const res = await fetch('/api/spotify/user-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.ok && json.profile) {
+        const existing = getStoredProfile();
+        return {
+          ...json.profile,
+          genres: existing?.genres || ['kpop', 'pop', 'retro'],
+          savedPlaylists: json.profile.savedPlaylists?.length ? json.profile.savedPlaylists : (existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS),
+        };
+      }
+      if (json.error === 'FORBIDDEN_USERS_ACCESS') {
+        const existing = getStoredProfile();
+        return {
+          id: 'spotify-oauth-user',
+          displayName: localStorage.getItem('beatsync-name') || 'Spotify 사용자',
+          genres: existing?.genres || ['kpop', 'pop', 'retro'],
+          savedPlaylists: existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS,
+          connectedAt: Date.now(),
+          isOAuth: true,
+          authError: 'forbidden_users_access',
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('Server user-data endpoint failed, trying direct browser fetch:', e);
+  }
+
+  // 2. Fallback to direct Spotify Web API fetch
   try {
     const res = await fetch('https://api.spotify.com/v1/me', {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
       console.warn('Failed to fetch /v1/me status:', res.status);
+      if (res.status === 403) {
+        const existing = getStoredProfile();
+        return {
+          id: 'spotify-oauth-user',
+          displayName: localStorage.getItem('beatsync-name') || 'Spotify 사용자',
+          genres: existing?.genres || ['kpop', 'pop', 'retro'],
+          savedPlaylists: existing?.savedPlaylists || DEFAULT_PRESET_PLAYLISTS,
+          connectedAt: Date.now(),
+          isOAuth: true,
+          authError: 'forbidden_users_access',
+        };
+      }
       return null;
     }
     const data = await res.json();
@@ -348,9 +398,15 @@ export async function fetchSpotifyProfile(token: string): Promise<SpotifyProfile
     }
     const existing = getStoredProfile();
     const avatarUrl = Array.isArray(data.images) && data.images[0]?.url ? data.images[0].url : '';
+    const displayName =
+      data.display_name?.trim() ||
+      (data.email ? String(data.email).split('@')[0] : '') ||
+      data.id ||
+      'Spotify 사용자';
+
     return {
       id: data.id || 'spotify-user',
-      displayName: data.display_name || data.id || 'Spotify 사용자',
+      displayName,
       avatarUrl,
       images: Array.isArray(data.images) ? data.images : [],
       email: data.email || '',
@@ -364,6 +420,19 @@ export async function fetchSpotifyProfile(token: string): Promise<SpotifyProfile
     console.error('fetchSpotifyProfile error:', err);
     return null;
   }
+}
+
+export async function refreshSpotifyProfile(): Promise<SpotifyProfile | null> {
+  const token = getStoredToken();
+  if (!token) return null;
+  const profile = await fetchSpotifyProfile(token);
+  if (profile) {
+    localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+    if (profile.displayName) {
+      localStorage.setItem('beatsync-name', profile.displayName);
+    }
+  }
+  return profile;
 }
 
 export async function fetchUserPlaylists(token: string): Promise<SpotifyPlaylistItem[]> {

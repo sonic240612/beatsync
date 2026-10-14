@@ -9,6 +9,7 @@ import {
   removeSavedPlaylist,
   updateProfileGenres,
   initiateSpotifyLogin,
+  refreshSpotifyProfile,
   SPOTIFY_GENRE_OPTIONS,
   type SpotifyProfile,
   type SpotifyPlaylistItem,
@@ -26,6 +27,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
   const { addToast } = useGame();
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
   const [loadingOAuth, setLoadingOAuth] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Form State
   const [guestNickname, setGuestNickname] = useState('');
@@ -45,6 +47,28 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
       }
     }
   }, [isOpen]);
+
+  const handleRefreshProfile = async () => {
+    setIsRefreshing(true);
+    try {
+      const updated = await refreshSpotifyProfile();
+      if (updated) {
+        setProfile(updated);
+        onProfileChange?.(updated);
+        if (updated.authError === 'forbidden_users_access') {
+          addToast('Spotify 개발자 모드 권한(403)으로 인해 대시보드 등록이 필요합니다.', 'warning');
+        } else {
+          addToast('Spotify 계정 정보 및 플레이리스트가 최신 상태로 갱신되었습니다!', 'success');
+        }
+      } else {
+        addToast('Spotify 세션 정보를 다시 불러오지 못했습니다. 다시 로그인해주세요.', 'error');
+      }
+    } catch {
+      addToast('동기화 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -177,15 +201,29 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
                   <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-xs font-bold text-emerald-300">현재 로그인된 Spotify 계정</span>
                 </div>
-                {profile.isOAuth ? (
-                  <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                    공식 연동 활성화
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-slate-700/60 border border-slate-600 px-2 py-0.5 text-[10px] font-medium text-slate-300">
-                    게스트 프로필
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {profile.isOAuth && (
+                    <button
+                      type="button"
+                      onClick={handleRefreshProfile}
+                      disabled={isRefreshing}
+                      className="rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      title="Spotify에서 최신 프로필 및 플레이리스트 다시 불러오기"
+                    >
+                      <span className={isRefreshing ? 'animate-spin' : ''}>🔄</span>
+                      <span>{isRefreshing ? '동기화 중…' : '다시 동기화'}</span>
+                    </button>
+                  )}
+                  {profile.isOAuth ? (
+                    <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                      공식 연동 활성화
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-slate-700/60 border border-slate-600 px-2 py-0.5 text-[10px] font-medium text-slate-300">
+                      게스트 프로필
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-3.5">
@@ -216,13 +254,59 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
               </div>
             </div>
 
+            {/* Development Mode Notice / 403 Forbidden Guidance */}
+            {profile.authError === 'forbidden_users_access' && (
+              <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-2.5 text-xs animate-in fade-in duration-200 shadow-md">
+                <div className="flex items-center gap-2 font-bold text-amber-300">
+                  <span className="text-base">⚠️</span>
+                  <span className="text-sm">Spotify 개발자 대시보드 사용자 등록 안내 (403 Forbidden)</span>
+                </div>
+                <p className="text-slate-300 leading-relaxed text-[11px]">
+                  현재 Spotify 개발자 앱이 <strong>개발 모드(Development Mode)</strong> 상태여서, Spotify 대시보드에 등록된 사용자만 프로필 이름과 보관함 플레이리스트 조회가 허용됩니다.
+                </p>
+                <div className="rounded-xl bg-black/40 border border-white/10 p-3 text-[11px] text-slate-300 space-y-1.5">
+                  <div className="font-bold text-emerald-300 mb-1">💡 연동 해결 방법:</div>
+                  <div>1. <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noreferrer" className="text-emerald-400 font-bold underline hover:text-emerald-300">Spotify Developer Dashboard</a> 접속</div>
+                  <div>2. 등록한 App 선택 ➔ 상단 <strong>Settings</strong> ➔ <strong>Users and Access</strong> 클릭</div>
+                  <div>3. <strong>[Add User]</strong> 버튼을 누르고 현재 사용 중인 Spotify 계정(이메일) 등록 후 저장</div>
+                  <div>4. 완료 후 아래의 <strong>[다시 동기화]</strong> 버튼을 누르면 이름과 플레이리스트가 즉시 연동됩니다!</div>
+                </div>
+                <div className="flex items-center justify-between pt-1 gap-2">
+                  <span className="text-[11px] text-slate-400">
+                    등록 전에도 아래 입력창에 플레이리스트 링크를 붙여넣으면 즉시 게임에 출제할 수 있습니다.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRefreshProfile}
+                    disabled={isRefreshing}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-colors shrink-0 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    {isRefreshing ? '동기화 중…' : '🔄 다시 동기화'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* User Playlists (with 1-Click "Apply to Game" button) */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <span>📂</span>
-                  <span>내 Spotify 플레이리스트 ({profile.savedPlaylists?.length || 0})</span>
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <span>📂</span>
+                    <span>내 Spotify 플레이리스트 ({profile.savedPlaylists?.length || 0})</span>
+                  </label>
+                  {profile.isOAuth && (
+                    <button
+                      type="button"
+                      onClick={handleRefreshProfile}
+                      disabled={isRefreshing}
+                      className="text-slate-400 hover:text-emerald-300 text-xs transition-colors p-0.5"
+                      title="플레이리스트 목록 새로고침"
+                    >
+                      <span className={`inline-block ${isRefreshing ? 'animate-spin' : ''}`}>🔄</span>
+                    </button>
+                  )}
+                </div>
                 <span className="text-[11px] text-slate-400">클릭하여 게임 출제곡으로 적용</span>
               </div>
 
