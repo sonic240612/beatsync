@@ -22,7 +22,7 @@ export interface SpotifyProfile {
   displayName: string;
   avatarUrl?: string;
   images?: { url: string }[];
-  genres: string[]; // e.g. ['kpop', 'pop', 'retro', 'rock', 'hiphop', 'chill']
+  genres?: string[];
   savedPlaylists: SpotifyPlaylistItem[];
   connectedAt: number;
   email?: string;
@@ -120,7 +120,6 @@ export function getStoredProfile(): SpotifyProfile | null {
  */
 export function simpleLogin(
   displayName: string,
-  genres: string[] = ['kpop', 'pop'],
   customPlaylists: SpotifyPlaylistItem[] = []
 ): SpotifyProfile {
   const trimmed = displayName.trim() || 'Spotify 플레이어';
@@ -132,7 +131,6 @@ export function simpleLogin(
   const profile: SpotifyProfile = {
     id: `spotify-user-${Date.now().toString(36)}`,
     displayName: trimmed,
-    genres: genres.length ? genres : ['kpop', 'pop'],
     savedPlaylists: mergedPlaylists,
     connectedAt: Date.now(),
     isOAuth: false,

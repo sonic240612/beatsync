@@ -7,10 +7,8 @@ import {
   clearSpotifySession,
   addSavedPlaylist,
   removeSavedPlaylist,
-  updateProfileGenres,
   initiateSpotifyLogin,
   refreshSpotifyProfile,
-  SPOTIFY_GENRE_OPTIONS,
   type SpotifyProfile,
   type SpotifyPlaylistItem,
 } from '@/lib/spotify';
@@ -31,7 +29,6 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
 
   // Form State
   const [guestNickname, setGuestNickname] = useState('');
-  const [selectedGenres, setSelectedGenres] = useState<string[]>(['kpop', 'pop']);
   const [newPlaylistUrl, setNewPlaylistUrl] = useState('');
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [showManualClientId, setShowManualClientId] = useState(false);
@@ -43,7 +40,6 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
       setProfile(stored);
       if (stored) {
         setGuestNickname(stored.displayName);
-        setSelectedGenres(stored.genres || ['kpop', 'pop']);
       }
     }
   }, [isOpen]);
@@ -72,18 +68,6 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
 
   if (!isOpen) return null;
 
-  const toggleGenre = (genreId: string) => {
-    setSelectedGenres(prev => {
-      const next = prev.includes(genreId) ? prev.filter(g => g !== genreId) : [...prev, genreId];
-      if (profile) {
-        const updated = updateProfileGenres(next);
-        setProfile(updated);
-        onProfileChange?.(updated);
-      }
-      return next;
-    });
-  };
-
   const handleSpotifyOAuthLogin = async () => {
     setLoadingOAuth(true);
     try {
@@ -106,7 +90,7 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
       addToast('닉네임을 입력해주세요.', 'warning');
       return;
     }
-    const userProfile = simpleLogin(trimmed, selectedGenres);
+    const userProfile = simpleLogin(trimmed);
     setProfile(userProfile);
     onProfileChange?.(userProfile);
     if (typeof window !== 'undefined') {
@@ -379,31 +363,6 @@ export function SpotifyModal({ isOpen, onClose, onSelectPlaylist, onProfileChang
               </form>
             </div>
 
-            {/* Music Taste Selector */}
-            <div className="space-y-2 pt-2 border-t border-white/10">
-              <label className="block text-xs font-bold text-slate-200">
-                🎧 즐겨 듣는 음악 장르 (랜덤 셔플 시 선호도 반영)
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SPOTIFY_GENRE_OPTIONS.map(g => {
-                  const active = selectedGenres.includes(g.id);
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => toggleGenre(g.id)}
-                      className={`p-2 rounded-xl border text-left text-xs font-bold transition-all ${
-                        active
-                          ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-sm'
-                          : 'border-white/10 bg-white/[0.03] text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <div className="truncate">{g.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
 
             {/* Bottom Actions */}
             <div className="flex gap-2 pt-3 border-t border-white/10">
