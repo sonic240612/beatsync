@@ -112,8 +112,12 @@ export default function PracticePage() {
           setPlaying(true);
         }
       }
-    } catch {
-      setFeedback('브라우저에서 사운드 재생이 차단되었거나 음원을 불러오지 못했습니다. 다시 재생 버튼을 눌러주세요.');
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError') {
+        setFeedback('브라우저에서 사운드 자동 재생이 차단되었습니다. 소리를 켜려면 다시 재생 버튼을 눌러주세요.');
+      } else {
+        setFeedback('음원을 불러오지 못했습니다. 해당 곡의 스트리밍 미리듣기가 제공되지 않습니다.');
+      }
     }
   }
 

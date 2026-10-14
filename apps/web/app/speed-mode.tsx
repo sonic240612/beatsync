@@ -25,6 +25,8 @@ export default function SpeedMode() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [guess, setGuess] = useState('');
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioLoadError, setAudioLoadError] = useState(false);
+  const [isResolvingAudio, setIsResolvingAudio] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [skipping, setSkipping] = useState(false);
 
@@ -50,6 +52,8 @@ export default function SpeedMode() {
   useEffect(() => {
     setGuess('');
     setAudioBlocked(false);
+    setAudioLoadError(false);
+    setIsResolvingAudio(false);
     setAudioEnded(false);
   }, [round]);
 
@@ -85,15 +89,22 @@ export default function SpeedMode() {
 
   useEffect(() => {
     const el = audio.current;
-    if (!el || !state?.preview?.url) return;
-
-    el.volume = volume;
+    if (!el) return;
 
     if (activeReveal) {
       el.pause();
       setIsPlaying(false);
       return;
     }
+
+    if (!state?.preview?.url) {
+      setAudioLoadError(true);
+      setAudioBlocked(false);
+      setIsPlaying(false);
+      return;
+    }
+
+    el.volume = volume;
 
     if (el.src !== state.preview.url) {
       el.src = state.preview.url;
@@ -104,46 +115,77 @@ export default function SpeedMode() {
       playPromise
         .then(() => {
           setAudioBlocked(false);
+          setAudioLoadError(false);
           setIsPlaying(true);
         })
-        .catch(() => {
-          setAudioBlocked(true);
+        .catch((err) => {
           setIsPlaying(false);
+          if (err?.name === 'NotAllowedError') {
+            setAudioBlocked(true);
+            setAudioLoadError(false);
+          } else {
+            handleAudioError();
+          }
         });
     }
   }, [state?.preview?.url, activeReveal, round]);
 
   const handleAudioError = async () => {
     const el = audio.current;
-    if (!el || !state?.preview?.url) return;
+    if (!el) return;
+
+    setIsResolvingAudio(true);
+    setAudioBlocked(false);
 
     try {
-      const urlObj = new URL(state.preview.url, window.location.origin);
-      const urlTitle = urlObj.searchParams.get('title') || '';
-      const urlArtist = urlObj.searchParams.get('artist') || '';
+      if (state?.preview?.url) {
+        const urlObj = new URL(state.preview.url, window.location.origin);
+        const urlTitle = urlObj.searchParams.get('title') || '';
+        const urlArtist = urlObj.searchParams.get('artist') || '';
 
-      if (urlTitle || urlArtist) {
-        const fallbackUrl = await resolveClientAudioPreview(urlTitle, urlArtist);
-        if (fallbackUrl && el.src !== fallbackUrl) {
-          el.src = fallbackUrl;
-          el.currentTime = 0;
-          el.play()
-            .then(() => {
+        if (urlTitle || urlArtist) {
+          const fallbackUrl = await resolveClientAudioPreview(urlTitle, urlArtist);
+          if (fallbackUrl && el.src !== fallbackUrl) {
+            el.src = fallbackUrl;
+            el.currentTime = 0;
+            const p = el.play();
+            if (p !== undefined) {
+              await p;
               setAudioBlocked(false);
+              setAudioLoadError(false);
               setIsPlaying(true);
-            })
-            .catch(() => {
-              setAudioBlocked(true);
-            });
+              setIsResolvingAudio(false);
+              return;
+            }
+          }
         }
       }
-    } catch {}
+    } catch (e: any) {
+      if (e?.name === 'NotAllowedError') {
+        setIsResolvingAudio(false);
+        setAudioBlocked(true);
+        setAudioLoadError(false);
+        return;
+      }
+    }
+
+    setIsResolvingAudio(false);
+    setIsPlaying(false);
+    setAudioBlocked(false);
+    setAudioLoadError(true);
   };
 
   const handleManualPlay = () => {
     const el = audio.current;
-    if (el && state?.preview?.url) {
-      el.volume = volume;
+    if (!el) return;
+    el.volume = volume;
+
+    if (audioLoadError) {
+      handleAudioError();
+      return;
+    }
+
+    if (state?.preview?.url) {
       if (el.src !== state.preview.url) {
         el.src = state.preview.url;
       }
@@ -153,31 +195,55 @@ export default function SpeedMode() {
       el.play()
         .then(() => {
           setAudioBlocked(false);
+          setAudioLoadError(false);
           setIsPlaying(true);
         })
-        .catch(() => {
-          handleAudioError();
+        .catch((err) => {
+          if (err?.name === 'NotAllowedError') {
+            setAudioBlocked(true);
+            setAudioLoadError(false);
+          } else {
+            handleAudioError();
+          }
         });
+    } else {
+      setAudioLoadError(true);
     }
   };
 
   const handleReplay = () => {
     const el = audio.current;
-    if (!el || !state?.preview?.url) return;
+    if (!el) return;
     el.volume = volume;
-    if (el.src !== state.preview.url) {
-      el.src = state.preview.url;
+
+    if (audioLoadError) {
+      handleAudioError();
+      return;
     }
-    el.currentTime = 0;
-    el.play()
-      .then(() => {
-        setAudioBlocked(false);
-        setIsPlaying(true);
-        setAudioEnded(false);
-      })
-      .catch(() => {
-        handleAudioError();
-      });
+
+    if (state?.preview?.url) {
+      if (el.src !== state.preview.url) {
+        el.src = state.preview.url;
+      }
+      el.currentTime = 0;
+      el.play()
+        .then(() => {
+          setAudioBlocked(false);
+          setAudioLoadError(false);
+          setIsPlaying(true);
+          setAudioEnded(false);
+        })
+        .catch((err) => {
+          if (err?.name === 'NotAllowedError') {
+            setAudioBlocked(true);
+            setAudioLoadError(false);
+          } else {
+            handleAudioError();
+          }
+        });
+    } else {
+      setAudioLoadError(true);
+    }
   };
 
   const handleSkip = async () => {
@@ -393,18 +459,47 @@ export default function SpeedMode() {
         </div>
       </div>
 
+      {/* Resolving Fallback Notice */}
+      {isResolvingAudio && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-300 dark:border-sky-500/40 bg-sky-100/70 dark:bg-sky-500/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-sky-900 dark:text-sky-200 backdrop-blur-md shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3.5 h-3.5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin shrink-0" />
+            <span className="text-[11px] sm:text-xs font-medium">대체 음원을 실시간으로 검색하여 연결하고 있습니다...</span>
+          </div>
+        </div>
+      )}
+
       {/* Audio Autoplay Block Notice */}
-      {audioBlocked && (
+      {audioBlocked && !audioLoadError && !isResolvingAudio && (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-300 dark:border-emerald-400/40 bg-emerald-100/70 dark:bg-emerald-400/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-emerald-900 dark:text-emerald-200 backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-2">
             <span className="text-base">🔊</span>
-            <span className="text-[11px] sm:text-xs">브라우저 사운드가 일시 중단되었습니다. 소리를 켜주세요.</span>
+            <span className="text-[11px] sm:text-xs">브라우저 자동 재생이 차단되었습니다. 소리를 켜주세요.</span>
           </div>
           <button
             onClick={handleManualPlay}
             className="liquid-btn-primary px-3 py-1.5 sm:px-4 sm:py-2 text-xs font-bold shrink-0"
           >
             소리 켜기
+          </button>
+        </div>
+      )}
+
+      {/* Audio Load Failure Notice */}
+      {audioLoadError && !isResolvingAudio && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-300 dark:border-rose-500/40 bg-rose-100/80 dark:bg-rose-500/15 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-rose-900 dark:text-rose-200 backdrop-blur-md shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚠️</span>
+            <div className="flex flex-col">
+              <span className="text-[11px] sm:text-xs font-bold">음원을 불러오지 못했습니다.</span>
+              <span className="text-[10px] text-rose-700 dark:text-rose-300">스트리밍이 제공되지 않는 곡입니다. 계속 진행하려면 스킵할 수 있습니다.</span>
+            </div>
+          </div>
+          <button
+            onClick={handleManualPlay}
+            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 transition shadow-sm"
+          >
+            다시 시도
           </button>
         </div>
       )}
@@ -428,6 +523,10 @@ export default function SpeedMode() {
         <p className="text-xs text-slate-400 font-medium text-center">
           {activeReveal
             ? '정답 확인 중… 이번 곡을 확인하고 다음 노래로 넘어가세요.'
+            : isResolvingAudio
+            ? '음원 검색 중...'
+            : audioLoadError
+            ? '음원 로드 실패 (스킵 버튼으로 넘길 수 있습니다)'
             : isPlaying
             ? `음악 재생 중 (${snippetSec}초)… 먼저 제목/가수를 맞혀보세요!`
             : audioEnded
