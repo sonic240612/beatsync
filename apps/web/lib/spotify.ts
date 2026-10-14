@@ -295,13 +295,18 @@ export async function fetchSpotifyProfile(token: string): Promise<SpotifyProfile
     });
     if (!res.ok) return null;
     const data = await res.json();
+    const userPlaylists = await fetchUserPlaylists(token);
+    const existing = getStoredProfile();
+    const avatarUrl = data.images?.[0]?.url || '';
     return {
       id: data.id,
       displayName: data.display_name || data.id,
+      avatarUrl,
+      images: data.images || [],
       email: data.email,
       product: data.product,
-      genres: ['kpop', 'pop', 'retro'],
-      savedPlaylists: DEFAULT_PRESET_PLAYLISTS,
+      genres: existing?.genres || ['kpop', 'pop', 'retro'],
+      savedPlaylists: userPlaylists?.length ? userPlaylists : DEFAULT_PRESET_PLAYLISTS,
       connectedAt: Date.now(),
       isOAuth: true,
     };

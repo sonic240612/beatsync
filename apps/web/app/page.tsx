@@ -6,6 +6,8 @@ import TimelineMode from './timeline-mode';
 import { VolumeControl } from '@/components/volume-control';
 import { LiquidSelect } from '@/components/liquid-select';
 import { LiquidSegmentGroup } from '@/components/liquid-segment-group';
+import { SpotifyModal } from '@/components/spotify-modal';
+import { getStoredProfile, type SpotifyProfile } from '@/lib/spotify';
 
 const TARGET_LABEL = { title: '제목만', artist: '가수만', both: '제목 + 가수' } as const;
 const MODE_LABEL = { speed: '⚡ 스피드 퀴즈', timeline: '⏳ 타임라인 카드' } as const;
@@ -47,6 +49,8 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showRoomCode, setShowRoomCode] = useState(false);
+  const [isSpotifyModalOpen, setIsSpotifyModalOpen] = useState(false);
+  const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
 
   useEffect(() => {
     connect().catch(() => {});
@@ -55,6 +59,11 @@ export default function Home() {
   useEffect(() => {
     const stored = localStorage.getItem('beatsync-name');
     if (stored) setName(stored);
+    const prof = getStoredProfile();
+    setSpotifyProfile(prof);
+    if (prof?.displayName && !stored) {
+      setName(prof.displayName);
+    }
   }, []);
 
   useEffect(() => {
@@ -140,6 +149,29 @@ export default function Home() {
         </a>
 
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Spotify Account Button */}
+          <button
+            type="button"
+            onClick={() => setIsSpotifyModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-bold text-emerald-300 transition-all shadow-sm cursor-pointer"
+            title="Spotify 계정 연동 및 플레이리스트 보관함"
+          >
+            {spotifyProfile?.avatarUrl ? (
+              <img
+                src={spotifyProfile.avatarUrl}
+                alt={spotifyProfile.displayName}
+                className="h-4 w-4 rounded-full object-cover shrink-0 border border-emerald-400 shadow-sm"
+              />
+            ) : (
+              <svg className="h-3.5 w-3.5 fill-current text-[#1ed760] shrink-0" viewBox="0 0 24 24">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.503 17.308c-.218.358-.684.472-1.042.254-2.855-1.745-6.449-2.14-10.683-1.173-.41.094-.82-.162-.914-.572-.094-.41.162-.82.572-.914 4.634-1.058 8.602-.61 11.813 1.363.358.218.472.684.254 1.042zm1.468-3.264c-.274.446-.86.589-1.306.315-3.268-2.008-8.25-2.592-12.116-1.418-.501.152-1.034-.134-1.186-.635-.152-.501.134-1.034.635-1.186 4.417-1.34 9.907-.687 13.658 1.618.446.274.589.86.315 1.306zm.126-3.41c-3.92-2.328-10.379-2.542-14.125-1.404-.6.183-1.238-.16-1.421-.76-.183-.6.16-1.238.76-1.421 4.305-1.307 11.434-1.055 15.946 1.623.539.32.716 1.018.396 1.557-.32.539-1.018.716-1.557.396z" />
+              </svg>
+            )}
+            <span className="truncate max-w-[80px] sm:max-w-[130px]">
+              {spotifyProfile ? spotifyProfile.displayName : 'Spotify 연동'}
+            </span>
+          </button>
+
           <a
             href="/practice"
             className="rounded-full border border-slate-700/60 bg-slate-800/40 px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-medium text-slate-300 hover:text-white transition-colors"
@@ -459,12 +491,22 @@ export default function Home() {
                 {/* Custom Spotify Playlist URL if selected */}
                 {state.settings.musicSource === 'spotify_playlist' && (
                   <div className="apple-glass-row sm:col-span-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-lg">🔗</span>
-                      <div>
-                        <span className="text-[13.5px] font-bold text-slate-200">Spotify 플레이리스트 URL</span>
-                        <p className="text-xs text-slate-400">공개 플레이리스트 링크 또는 ID 입력</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">🔗</span>
+                        <div>
+                          <span className="text-[13.5px] font-bold text-slate-200">Spotify 플레이리스트 URL</span>
+                          <p className="text-xs text-slate-400">공개 플레이리스트 링크 또는 ID 입력</p>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsSpotifyModalOpen(true)}
+                        className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 transition-all cursor-pointer shadow-sm"
+                      >
+                        <span>📂</span>
+                        <span>내 보관함에서 선택</span>
+                      </button>
                     </div>
                     <div className="flex gap-2">
                       <input
@@ -807,6 +849,19 @@ export default function Home() {
       <footer className="mt-14 border-t border-slate-800/60 pt-6 text-center text-xs leading-6 text-slate-500">
         BeatSync · Spotify Web API & Universal 30s Audio Engine · 실시간 음악 퀴즈 파티
       </footer>
+
+      {/* Spotify Account & Playlist Modal */}
+      <SpotifyModal
+        isOpen={isSpotifyModalOpen}
+        onClose={() => {
+          setIsSpotifyModalOpen(false);
+          setSpotifyProfile(getStoredProfile());
+        }}
+        onSelectPlaylist={url => {
+          setPlaylistInput(url);
+          handleApplyPlaylist(url);
+        }}
+      />
     </main>
   );
 }
