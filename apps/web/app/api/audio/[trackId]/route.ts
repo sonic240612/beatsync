@@ -4,41 +4,59 @@ import { tracks as catalog } from '@/shared/tracks.js';
 const previewCache = new Map<string, string>();
 
 async function resolvePreview(title: string, artist: string): Promise<string | null> {
-  const key = `${artist}:${title}`.toLowerCase();
+  const cleanTitle = (title || '').replace(/\s*[\(\[（].*?[\)\]）]/g, '').trim();
+  const firstArtist = (artist || '').split(/[,&/×・]/)[0].trim();
+  const key = `${firstArtist}:${cleanTitle}`.toLowerCase();
   if (previewCache.has(key)) return previewCache.get(key)!;
 
-  try {
-    const query = encodeURIComponent(`${artist} ${title}`);
-    const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`, {
-      next: { revalidate: 3600 },
-    });
-    if (res.ok) {
-      const text = await res.text();
-      if (text) {
-        const data = JSON.parse(text);
-        const item = data.results?.[0];
-        if (item?.previewUrl) {
-          previewCache.set(key, item.previewUrl);
-          return item.previewUrl;
+  const queries = [
+    `${firstArtist} ${cleanTitle}`,
+    `${artist} ${title}`,
+    cleanTitle,
+  ].filter(Boolean);
+
+  const countries = ['US', 'JP'];
+  for (const country of countries) {
+    for (const q of queries) {
+      try {
+        const query = encodeURIComponent(q);
+        const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=5&country=${country}`, {
+          next: { revalidate: 3600 },
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+        if (res.ok) {
+          const text = await res.text();
+          if (text) {
+            const data = JSON.parse(text);
+            const cand = (data.results || []).find((r: any) => r.previewUrl);
+            if (cand?.previewUrl) {
+              previewCache.set(key, cand.previewUrl);
+              return cand.previewUrl;
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  for (const q of queries) {
+    try {
+      const query = encodeURIComponent(q);
+      const deezerRes = await fetch(`https://api.deezer.com/search?q=${query}&limit=5`, {
+        next: { revalidate: 3600 },
+      });
+      if (deezerRes.ok) {
+        const deezerData = await deezerRes.json();
+        const cand = (deezerData?.data || []).find((r: any) => r.preview);
+        if (cand?.preview) {
+          previewCache.set(key, cand.preview);
+          return cand.preview;
         }
       }
-    }
-  } catch {}
-
-  try {
-    const q = encodeURIComponent(`${artist} ${title}`);
-    const deezerRes = await fetch(`https://api.deezer.com/search?q=${q}&limit=1`, {
-      next: { revalidate: 3600 },
-    });
-    if (deezerRes.ok) {
-      const deezerData = await deezerRes.json();
-      const previewUrl = deezerData?.data?.[0]?.preview;
-      if (previewUrl) {
-        previewCache.set(key, previewUrl);
-        return previewUrl;
-      }
-    }
-  } catch {}
+    } catch {}
+  }
 
   return null;
 }
@@ -51,6 +69,9 @@ export async function GET(
   const track = catalog.find(t => t.id === trackId);
 
   if (track) {
+    if (track.previewUrl) {
+      return NextResponse.redirect(track.previewUrl);
+    }
     const livePreview = await resolvePreview(track.title, track.artist);
     if (livePreview) {
       return NextResponse.redirect(livePreview);

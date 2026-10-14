@@ -739,23 +739,27 @@ export async function resolveAudioPreview(title, artist, optionsOrTitleAliases =
       }
 
       let item = null;
-      for (const q of queries) {
-        try {
-          const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q.term)}&entity=song&limit=8`;
-          const res = await fetch(url, { headers: reqHeaders });
-          if (res.status === 403 || res.status === 429) {
-            itunesCooldownUntil = Date.now() + 60000;
-            break;
-          }
-          if (res.ok) {
-            const text = await res.text();
-            if (text) {
-              const data = JSON.parse(text);
-              item = selectBestCandidate(data.results, cleanTitleInput, cleanArtistInput, extraTitleAliases, artistAliases);
-              if (item) break;
+      const countries = hasJapanese ? ['JP', 'US'] : ['US', 'JP'];
+      for (const country of countries) {
+        for (const q of queries) {
+          try {
+            const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q.term)}&entity=song&limit=8&country=${country}`;
+            const res = await fetch(url, { headers: reqHeaders });
+            if (res.status === 403 || res.status === 429) {
+              itunesCooldownUntil = Date.now() + 60000;
+              break;
             }
-          }
-        } catch {}
+            if (res.ok) {
+              const text = await res.text();
+              if (text) {
+                const data = JSON.parse(text);
+                item = selectBestCandidate(data.results, cleanTitleInput, cleanArtistInput, extraTitleAliases, artistAliases);
+                if (item) break;
+              }
+            }
+          } catch {}
+        }
+        if (item || itunesCooldownUntil > Date.now()) break;
       }
 
       if (item) {
@@ -993,8 +997,8 @@ export async function enrichTracksMetadata(tracks) {
       const trackId = t.id ? String(t.id).replace('spotify-', '').replace('spotify:track:', '') : '';
       const hasSpotifyTrackId = Boolean(trackId && !trackId.startsWith('t-') && /^[a-zA-Z0-9]{15,30}$/.test(trackId));
 
-      // 3. Fetch official per-track metadata directly from Spotify only when year or cover is missing
-      if (hasSpotifyTrackId && (!t.year || !t.coverUrl)) {
+      // 3. Fetch official per-track metadata directly from Spotify only when year, cover, or preview is missing
+      if (hasSpotifyTrackId && (!t.year || !t.coverUrl || !t.previewUrl)) {
         const spMeta = await fetchSpotifyTrackMeta(trackId);
         if (spMeta) {
           if (spMeta.year && !t.year) t.year = spMeta.year;
@@ -1003,8 +1007,8 @@ export async function enrichTracksMetadata(tracks) {
         }
       }
 
-      // 4. Query iTunes/Deezer fallback ONLY if year is still missing after all above checks
-      if (!t.year) {
+      // 4. Query iTunes/Deezer fallback if previewUrl, year, or coverUrl is missing
+      if (!t.previewUrl || !t.year || !t.coverUrl) {
         const res = await resolveAudioPreview(t.title, t.artist, t.aliases?.title, t.aliases?.artist);
         if (res) {
           if (!t.year && res.year) t.year = res.year;

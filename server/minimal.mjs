@@ -241,7 +241,8 @@ io.on('connection', (socket) => {
         }
       }
 
-      const provider = createTrackProvider(`http://127.0.0.1:${PORT}`, {
+      const publicBaseUrl = process.env.PUBLIC_SERVER_URL || process.env.SERVER_URL || '';
+      const provider = createTrackProvider(publicBaseUrl, {
         musicSource: source,
         playlistUrl: room.settings.playlistUrl,
         customTracks: source === 'spotify_playlist' ? room.customTracks : null,

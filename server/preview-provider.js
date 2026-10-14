@@ -117,8 +117,11 @@ export function createTrackProvider(baseUrl, options = {}) {
           startSeconds,
         };
       }
+      const safeBase = (baseUrl && !baseUrl.includes('127.0.0.1') && !baseUrl.includes('localhost'))
+        ? baseUrl.replace(/\/+$/, '')
+        : '';
       return {
-        url: `${baseUrl}/api/audio/${track.id}?start=${startSeconds}`,
+        url: `${safeBase}/api/audio/${encodeURIComponent(track.id)}?start=${startSeconds}`,
         startSeconds,
       };
     },
