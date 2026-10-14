@@ -60,7 +60,7 @@ export type RoomState = {
   endsAt?: number;
   turn?: string;
   track?: Track;
-  preview?: { url: string; startSeconds: number };
+  preview?: { url: string; startSeconds: number; trackId?: string; title?: string; artist?: string };
   solvers?: RoundSolvers;
   reveal?: Reveal;
   timelines?: Record<string, TimelineEntry[]>;

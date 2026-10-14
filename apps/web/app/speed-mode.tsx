@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '@/lib/game';
+import { tracks as staticTracks } from '@/shared/tracks.js';
 import { VolumeControl } from '@/components/volume-control';
-import { resolveClientAudioPreview } from '@/lib/audio-fallback';
+import { resolveClientAudioFallback } from '@/lib/audio-fallback';
+import { HiddenYouTubePlayer } from '@/components/hidden-youtube-player';
 
 function useCountdown(endsAt?: number) {
   const [left, setLeft] = useState(0);
@@ -27,6 +29,8 @@ export default function SpeedMode() {
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [audioLoadError, setAudioLoadError] = useState(false);
   const [isResolvingAudio, setIsResolvingAudio] = useState(false);
+  const [activeYouTubeId, setActiveYouTubeId] = useState<string | null>(null);
+  const [replayKey, setReplayKey] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [skipping, setSkipping] = useState(false);
 
@@ -51,6 +55,7 @@ export default function SpeedMode() {
 
   useEffect(() => {
     setGuess('');
+    setActiveYouTubeId(null);
     setAudioBlocked(false);
     setAudioLoadError(false);
     setIsResolvingAudio(false);
@@ -88,6 +93,12 @@ export default function SpeedMode() {
   }, [round, state?.phase, activeReveal]);
 
   useEffect(() => {
+    setActiveYouTubeId(null);
+    setAudioBlocked(false);
+    setAudioLoadError(false);
+    setIsResolvingAudio(false);
+    setAudioEnded(false);
+
     const el = audio.current;
     if (!el) return;
 
@@ -98,9 +109,7 @@ export default function SpeedMode() {
     }
 
     if (!state?.preview?.url) {
-      setAudioLoadError(true);
-      setAudioBlocked(false);
-      setIsPlaying(false);
+      handleAudioError();
       return;
     }
 
@@ -131,23 +140,59 @@ export default function SpeedMode() {
   }, [state?.preview?.url, activeReveal, round]);
 
   const handleAudioError = async () => {
+    if (isResolvingAudio) return;
     const el = audio.current;
-    if (!el) return;
 
     setIsResolvingAudio(true);
     setAudioBlocked(false);
 
     try {
-      if (state?.preview?.url) {
-        const urlObj = new URL(state.preview.url, window.location.origin);
-        const urlTitle = urlObj.searchParams.get('title') || '';
-        const urlArtist = urlObj.searchParams.get('artist') || '';
+      let trackTitle = state?.preview?.title || '';
+      let trackArtist = state?.preview?.artist || '';
+      let trackId = state?.preview?.trackId || '';
 
-        if (urlTitle || urlArtist) {
-          const fallbackUrl = await resolveClientAudioPreview(urlTitle, urlArtist);
-          if (fallbackUrl && el.src !== fallbackUrl) {
-            el.src = fallbackUrl;
+      if (state?.preview?.url) {
+        try {
+          const urlObj = new URL(state.preview.url, window.location.origin);
+          if (!trackTitle) trackTitle = urlObj.searchParams.get('title') || '';
+          if (!trackArtist) trackArtist = urlObj.searchParams.get('artist') || '';
+          if (!trackId) {
+            const pathParts = urlObj.pathname.split('/');
+            const audioIdx = pathParts.indexOf('audio');
+            if (audioIdx !== -1 && pathParts[audioIdx + 1]) {
+              trackId = decodeURIComponent(pathParts[audioIdx + 1]);
+            }
+          }
+        } catch {}
+      }
+
+      if (!trackTitle && trackId) {
+        const found = staticTracks.find(t => t.id === trackId);
+        if (found) {
+          trackTitle = found.title;
+          trackArtist = found.artist;
+        }
+      }
+
+      if (trackTitle || trackArtist || trackId) {
+        const fallback = await resolveClientAudioFallback(trackTitle, trackArtist, trackId);
+        if (fallback) {
+          if (fallback.source === 'youtube' && fallback.youtubeId) {
+            if (el) {
+              el.pause();
+              el.src = '';
+            }
+            setActiveYouTubeId(fallback.youtubeId);
+            setAudioLoadError(false);
+            setAudioBlocked(false);
+            setIsPlaying(true);
+            setIsResolvingAudio(false);
+            return;
+          } else if (fallback.url && el) {
+            setActiveYouTubeId(null);
+            el.src = fallback.url;
             el.currentTime = 0;
+            el.volume = volume;
             const p = el.play();
             if (p !== undefined) {
               await p;
@@ -176,14 +221,23 @@ export default function SpeedMode() {
   };
 
   const handleManualPlay = () => {
-    const el = audio.current;
-    if (!el) return;
-    el.volume = volume;
+    if (isResolvingAudio) return;
+
+    if (activeYouTubeId) {
+      setIsPlaying(true);
+      setAudioBlocked(false);
+      setReplayKey(k => k + 1);
+      return;
+    }
 
     if (audioLoadError) {
       handleAudioError();
       return;
     }
+
+    const el = audio.current;
+    if (!el) return;
+    el.volume = volume;
 
     if (state?.preview?.url) {
       if (el.src !== state.preview.url) {
@@ -207,13 +261,25 @@ export default function SpeedMode() {
           }
         });
     } else {
-      setAudioLoadError(true);
+      handleAudioError();
     }
   };
 
   const handleReplay = () => {
+    if (activeYouTubeId) {
+      setIsPlaying(true);
+      setAudioEnded(false);
+      setReplayKey(k => k + 1);
+      return;
+    }
+
     const el = audio.current;
-    if (!el) return;
+    if (!el || !state?.preview?.url) {
+      if (!state?.preview?.url) {
+        handleAudioError();
+      }
+      return;
+    }
     el.volume = volume;
 
     if (audioLoadError) {
@@ -221,29 +287,25 @@ export default function SpeedMode() {
       return;
     }
 
-    if (state?.preview?.url) {
-      if (el.src !== state.preview.url) {
-        el.src = state.preview.url;
-      }
-      el.currentTime = 0;
-      el.play()
-        .then(() => {
-          setAudioBlocked(false);
-          setAudioLoadError(false);
-          setIsPlaying(true);
-          setAudioEnded(false);
-        })
-        .catch((err) => {
-          if (err?.name === 'NotAllowedError') {
-            setAudioBlocked(true);
-            setAudioLoadError(false);
-          } else {
-            handleAudioError();
-          }
-        });
-    } else {
-      setAudioLoadError(true);
+    if (el.src !== state.preview.url) {
+      el.src = state.preview.url;
     }
+    el.currentTime = 0;
+    el.play()
+      .then(() => {
+        setAudioBlocked(false);
+        setAudioLoadError(false);
+        setIsPlaying(true);
+        setAudioEnded(false);
+      })
+      .catch((err) => {
+        if (err?.name === 'NotAllowedError') {
+          setAudioBlocked(true);
+          setAudioLoadError(false);
+        } else {
+          handleAudioError();
+        }
+      });
   };
 
   const handleSkip = async () => {
@@ -381,6 +443,28 @@ export default function SpeedMode() {
         }}
         onError={handleAudioError}
       />
+      <HiddenYouTubePlayer
+        videoId={activeYouTubeId}
+        isPlaying={isPlaying && !activeReveal}
+        startSeconds={state?.preview?.startSeconds || 0}
+        snippetSeconds={snippetSec}
+        volume={volume}
+        replayKey={replayKey}
+        onPlay={() => {
+          setIsPlaying(true);
+          setAudioBlocked(false);
+          setAudioLoadError(false);
+        }}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setAudioEnded(true);
+        }}
+        onError={() => {
+          setIsPlaying(false);
+          setAudioLoadError(true);
+        }}
+      />
 
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700/40 pb-3 sm:pb-4">
@@ -464,8 +548,17 @@ export default function SpeedMode() {
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-300 dark:border-sky-500/40 bg-sky-100/70 dark:bg-sky-500/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-sky-900 dark:text-sky-200 backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-2">
             <span className="inline-block w-3.5 h-3.5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin shrink-0" />
-            <span className="text-[11px] sm:text-xs font-medium">대체 음원을 실시간으로 검색하여 연결하고 있습니다...</span>
+            <div className="flex flex-col">
+              <span className="text-[11px] sm:text-xs font-bold">대체 음원 탐색 중...</span>
+              <span className="text-[10px] text-sky-700 dark:text-sky-300">Apple Music / Deezer / YouTube에서 음원을 찾고 있습니다.</span>
+            </div>
           </div>
+          <button
+            disabled
+            className="px-3 py-1.5 rounded-lg bg-sky-600/50 text-white font-bold text-xs shrink-0 cursor-not-allowed opacity-75"
+          >
+            탐색 중...
+          </button>
         </div>
       )}
 
@@ -492,14 +585,15 @@ export default function SpeedMode() {
             <span className="text-base">⚠️</span>
             <div className="flex flex-col">
               <span className="text-[11px] sm:text-xs font-bold">음원을 불러오지 못했습니다.</span>
-              <span className="text-[10px] text-rose-700 dark:text-rose-300">스트리밍이 제공되지 않는 곡입니다. 계속 진행하려면 스킵할 수 있습니다.</span>
+              <span className="text-[10px] text-rose-700 dark:text-rose-300">기본 스트리밍 및 대체 음원 탐색에 실패했습니다. 다시 시도할 수 있습니다.</span>
             </div>
           </div>
           <button
             onClick={handleManualPlay}
-            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 transition shadow-sm"
+            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs shrink-0 transition shadow-sm flex items-center gap-1.5"
           >
-            다시 시도
+            <span>🔄</span>
+            <span>다시 시도</span>
           </button>
         </div>
       )}
@@ -535,7 +629,7 @@ export default function SpeedMode() {
         </p>
 
         {/* Replay Button */}
-        {!activeReveal && state?.preview?.url && (
+        {!activeReveal && (state?.preview?.url || activeYouTubeId) && (
           <div className="pt-1 flex items-center justify-center">
             <button
               type="button"
