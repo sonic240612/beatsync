@@ -729,10 +729,15 @@ export function GlassEffectProvider() {
     }
 
     function snapLens(record: LensGroupRecord) {
-      Object.assign(record.target, { scaleX: 1, scaleY: 1, rotate: 0, bloom: 0 });
-      Object.assign(record.value, record.target);
-      for (const key of Object.keys(record.velocity) as Array<keyof typeof record.velocity>) {
+      for (const key of lensDimensions) {
+        record.value[key] = record.target[key];
         record.velocity[key] = 0;
+      }
+      if (!motionEnabled()) {
+        record.value.scaleX = 1;
+        record.value.scaleY = 1;
+        record.value.rotate = 0;
+        record.value.bloom = 0;
       }
       renderLens(record);
     }
@@ -797,8 +802,8 @@ export function GlassEffectProvider() {
           record.target.scaleY = uniformScale;
           record.target.rotate = 0;
           for (const key of lensDeformations) {
-            const stiffness = key === 'bloom' ? 980 : 920;
-            const damping = key === 'bloom' ? 46 : 44;
+            const stiffness = isBlooming ? 420 : 360;
+            const damping = isBlooming ? 30 : 28;
             integrateLens(record, key, dt, stiffness, damping);
           }
         }
@@ -870,7 +875,7 @@ export function GlassEffectProvider() {
     function finishDrag(record: LensGroupRecord, event: PointerEvent | null, cancelled: boolean) {
       if (!record.drag || (event && record.drag.id !== event.pointerId)) return;
       const drag = clearDrag(record);
-      record.bloomUntil = cancelled ? 0 : performance.now() + 80;
+      record.bloomUntil = 0;
       wakeLens();
       if (drag && drag.moved) record.suppressClickUntil = performance.now() + 700;
       if (drag && drag.moved && !cancelled && active() && event) {
@@ -935,6 +940,7 @@ export function GlassEffectProvider() {
         finishDrag(record, null, true);
         record.suppressClickUntil = 0;
         record.pressed = true;
+        record.bloomUntil = 0;
         const geom = buttonGeometry(button, record.group);
         record.drag = {
           id: event.pointerId,
@@ -983,7 +989,7 @@ export function GlassEffectProvider() {
           event.stopImmediatePropagation();
           return;
         }
-        record.bloomUntil = performance.now() + 80;
+        record.bloomUntil = 0;
         wakeLens();
       };
 

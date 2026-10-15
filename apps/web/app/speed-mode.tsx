@@ -568,9 +568,9 @@ export default function SpeedMode() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-        {/* Main Quiz Arena (Right on PC, 7~8 cols): order-1 lg:order-2 */}
-        <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 space-y-4 sm:space-y-6 min-w-0">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 items-start">
+        {/* Main Quiz Arena (Right on PC, 8 cols on xl): order-1 xl:order-2 */}
+        <div className="order-1 xl:order-2 xl:col-span-8 space-y-4 sm:space-y-6 min-w-0">
           {/* Resolving Fallback Notice */}
       {isResolvingAudio && (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-300 dark:border-sky-500/40 bg-sky-100/70 dark:bg-sky-500/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-sky-900 dark:text-sky-200 backdrop-blur-md shadow-sm">
@@ -1077,8 +1077,8 @@ export default function SpeedMode() {
 
         </div>
 
-        {/* Left Column (Live Scoreboard on PC): 4~5 cols: order-2 lg:order-1 */}
-        <aside className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 space-y-4 min-w-0">
+        {/* Left Column (Live Scoreboard on PC): 4 cols on xl: order-2 xl:order-1 */}
+        <aside className="order-2 xl:order-1 xl:col-span-4 xl:sticky xl:top-24 space-y-4 min-w-0">
           <div className="rounded-3xl border border-slate-700/60 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 space-y-3.5 shadow-lg">
             <div className="flex items-center justify-between pb-2 border-b border-slate-700/50">
               <div className="flex items-center gap-2">

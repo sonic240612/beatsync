@@ -43,7 +43,6 @@ export function LiquidSegmentGroup<T extends string | number>({
 
   return (
     <div
-      data-liquid-surface
       data-liquid-segment-group
       data-accent={accent}
       role="group"

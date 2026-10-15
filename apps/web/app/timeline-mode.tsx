@@ -729,9 +729,9 @@ export default function TimelineMode() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6 items-start">
         {/* Left Column (PC): Participant Timeline Status */}
-        <aside className="order-2 lg:order-1 lg:col-span-4 xl:col-span-4 lg:sticky lg:top-24 space-y-3 min-w-0">
+        <aside className="order-2 xl:order-1 xl:col-span-4 xl:sticky xl:top-24 space-y-3 min-w-0">
           <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 space-y-3 shadow-lg">
             <div className="flex items-center justify-between pb-1 border-b border-slate-700/50">
               <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -819,7 +819,7 @@ export default function TimelineMode() {
         </aside>
 
         {/* Right Column (PC): Interactive Gameplay Area */}
-        <div className="order-1 lg:order-2 lg:col-span-8 xl:col-span-8 space-y-4 sm:space-y-5 min-w-0">
+        <div className="order-1 xl:order-2 xl:col-span-8 space-y-4 sm:space-y-5 min-w-0">
           {/* Resolving Fallback Notice */}
           {isResolvingAudio && (
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-300 dark:border-sky-500/40 bg-sky-100/70 dark:bg-sky-500/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-sky-900 dark:text-sky-200 backdrop-blur-md shadow-sm">

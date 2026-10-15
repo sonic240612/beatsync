@@ -184,26 +184,26 @@ export default function Home() {
 
       {/* Landing: Not In Room */}
       {!inRoom && (
-        <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-8 lg:items-center py-2 lg:py-4">
-          {/* Left Column (5 cols on lg): Hero & Game Mode Showcase */}
-          <div className="lg:col-span-5 space-y-6">
-            <section className="text-center lg:text-left py-2 sm:py-4 space-y-3">
+        <div className="space-y-8 xl:space-y-0 xl:grid xl:grid-cols-12 xl:gap-8 xl:items-center py-2 xl:py-4">
+          {/* Left Column (5 cols on xl): Hero & Game Mode Showcase */}
+          <div className="xl:col-span-5 space-y-6">
+            <section className="text-center xl:text-left py-2 sm:py-4 space-y-3">
               <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-1 text-xs font-semibold tracking-wider text-emerald-300 uppercase">
                 실시간 음악 퀴즈 & 타임라인 배틀
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-4xl xl:text-5xl font-black tracking-tight leading-tight">
                 들리는 순간,<br />
                 <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
                   비트와 함께 맞춰봐.
                 </span>
               </h2>
-              <p className="max-w-xl mx-auto lg:mx-0 text-sm sm:text-base text-slate-400 leading-relaxed">
+              <p className="max-w-xl mx-auto xl:mx-0 text-sm sm:text-base text-slate-400 leading-relaxed">
                 실시간 음악 퀴즈와 발매연도 타임라인 카드 배치 게임. 친구들과 방을 만들어 지금 바로 승부하세요!
               </p>
             </section>
 
             {/* Desktop-Only Feature Showcase Cards */}
-            <div className="hidden lg:grid gap-3.5">
+            <div className="hidden xl:grid gap-3.5">
               <div data-liquid-surface className="liquid-glass-card p-4 rounded-2xl flex items-start gap-3.5 border border-white/10 shadow-sm">
                 <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-lg shrink-0">
                   ⚡
@@ -235,8 +235,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column (7 cols on lg): Nickname Card & Action Deck */}
-          <div className="lg:col-span-7 space-y-6">
+          {/* Right Column (7 cols on xl): Nickname Card & Action Deck */}
+          <div className="xl:col-span-7 space-y-6">
             {/* Centered Unified Single Nickname Card */}
             <div className="w-full">
               <div data-liquid-surface className="liquid-glass-card p-5 sm:p-6 text-center space-y-3 shadow-xl">
@@ -437,9 +437,9 @@ export default function Home() {
 
           {/* Lobby Settings & Dashboard */}
           {(state.phase === 'lobby' || state.phase === 'starting') && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Main Column (Right on PC, 7 cols on lg, 8 cols on xl): Game Settings & Start Action */}
-              <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 space-y-6 min-w-0">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+              {/* Main Column (Right on PC, 8 cols on xl): Game Settings & Start Action */}
+              <div className="order-1 xl:order-2 xl:col-span-8 space-y-6 min-w-0">
                 <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-5 sm:space-y-6 min-w-0 max-w-full overflow-hidden">
                   {/* Settings Header */}
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -463,7 +463,7 @@ export default function Home() {
                   </div>
 
                   {/* Setting Inset Rows */}
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 min-w-0 max-w-full">
+                  <div className="grid gap-4 grid-cols-1 xl:grid-cols-2 min-w-0 max-w-full">
                     {/* Game Mode */}
                     <div className="apple-glass-row min-w-0 max-w-full">
                       <div className="flex items-center gap-2.5">
@@ -513,7 +513,7 @@ export default function Home() {
 
                     {/* Custom Spotify Playlist URL if selected */}
                     {state.settings.musicSource === 'spotify_playlist' && (
-                      <div className="apple-glass-row md:col-span-2 space-y-3 min-w-0 max-w-full">
+                      <div className="apple-glass-row xl:col-span-2 space-y-3 min-w-0 max-w-full">
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">🔗</span>
                           <div>
@@ -571,7 +571,7 @@ export default function Home() {
 
                     {/* Spotify Random Shuffle Notice */}
                     {state.settings.musicSource === 'spotify_random' && (
-                      <div className="md:col-span-2 rounded-2xl border border-emerald-300 dark:border-emerald-400/25 bg-emerald-100/70 dark:bg-emerald-400/10 p-3.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
+                      <div className="xl:col-span-2 rounded-2xl border border-emerald-300 dark:border-emerald-400/25 bg-emerald-100/70 dark:bg-emerald-400/10 p-3.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
                         <span className="text-lg shrink-0">🎲</span>
                         <div className="leading-relaxed">
                           <strong className="font-black text-emerald-950 dark:text-white">완전 랜덤 셔플 활성화:</strong> K-Pop, Pop, J-Pop 등 모든 장르와 연대를 무작위로 혼합하여 매 라운드 예측 불가능한 문제가 출제됩니다!
@@ -581,7 +581,7 @@ export default function Home() {
 
                     {/* Timeline Mode Curated Catalog Notice */}
                     {state.settings.musicSource === 'timeline_all' && (
-                      <div className="md:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/25 bg-sky-100/70 dark:bg-sky-400/10 p-3.5 text-xs text-sky-900 dark:text-sky-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
+                      <div className="xl:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/25 bg-sky-100/70 dark:bg-sky-400/10 p-3.5 text-xs text-sky-900 dark:text-sky-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
                         <span className="text-lg shrink-0">⏳</span>
                         <div className="leading-relaxed">
                           <strong className="font-black text-sky-950 dark:text-white">타임라인 특화 카탈로그:</strong> 1970년대 전설의 명곡부터 80·90 레트로, 2000·2010 명곡, 2026 최신곡까지 6개 시대의 음악이 매 라운드 고르게 순환 출제되어 연도 맞추기에 최적화되었습니다!
@@ -639,7 +639,7 @@ export default function Home() {
                         </div>
 
                         {/* Total Rounds */}
-                        <div className="apple-glass-row md:col-span-2 min-w-0 max-w-full">
+                        <div className="apple-glass-row xl:col-span-2 min-w-0 max-w-full">
                           <div className="flex items-center gap-2.5">
                             <span className="text-lg">🏆</span>
                             <div>
@@ -668,7 +668,7 @@ export default function Home() {
                     {/* Timeline Mode Options */}
                     {state.settings.mode === 'timeline' && (
                       <>
-                        <div className="apple-glass-row md:col-span-2 space-y-3 min-w-0 max-w-full">
+                        <div className="apple-glass-row xl:col-span-2 space-y-3 min-w-0 max-w-full">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                               <span className="text-lg">🃏</span>
@@ -717,7 +717,7 @@ export default function Home() {
                         </div>
 
                         {/* Preview Snippet Duration */}
-                        <div className="apple-glass-row md:col-span-2 min-w-0 max-w-full">
+                        <div className="apple-glass-row xl:col-span-2 min-w-0 max-w-full">
                           <div className="flex items-center gap-2.5">
                             <span className="text-lg">⏱️</span>
                             <div>
@@ -808,8 +808,8 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Left Sidebar (Left on PC, 5 cols on lg, 4 cols on xl): Player Roster & Volume/Tips */}
-              <aside className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-24 min-w-0">
+              {/* Left Sidebar (Left on PC, 4 cols on xl): Player Roster & Volume/Tips */}
+              <aside className="order-2 xl:order-1 xl:col-span-4 space-y-6 xl:sticky xl:top-24 min-w-0">
                 {/* Player Roster - Living Liquid Glass Cards */}
                 <section data-liquid-surface className="liquid-glass-card p-5 sm:p-6 space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-white/10">
