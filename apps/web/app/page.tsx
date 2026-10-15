@@ -147,16 +147,19 @@ export default function Home() {
           <button
             onClick={toggleThemeStyle}
             type="button"
+            aria-label="심플/글래스 테마 전환"
             title={themeStyle === 'simple' ? '화려한 글래스 테마로 전환' : '깔끔한 심플 테마로 전환'}
-            aria-label="심플 테마 토글"
-            className={`flex h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-full border text-xs font-semibold transition-all ${
-              themeStyle === 'simple'
-                ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300 shadow-sm'
-                : 'border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white'
-            }`}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white transition-all"
           >
-            <span className="text-sm">{themeStyle === 'simple' ? '⚡' : '✨'}</span>
-            <span className="hidden sm:inline">{themeStyle === 'simple' ? '심플 테마' : '글래스 테마'}</span>
+            {themeStyle === 'simple' ? (
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.286L13 21l-2.286-6.857L5 12l5.714-2.286L13 3z" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
           </button>
 
           {/* Volume Control Button */}
