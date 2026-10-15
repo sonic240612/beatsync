@@ -65,6 +65,7 @@ export type RoomState = {
   reveal?: Reveal;
   timelines?: Record<string, TimelineEntry[]>;
   skipVotes?: string[];
+  winnerId?: string;
 };
 
 export type Reveal = {

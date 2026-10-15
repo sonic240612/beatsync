@@ -219,6 +219,10 @@ body[data-mode="light"] .liquid-particle {
   border-radius: 26px;
   box-shadow: var(--surface-shadow);
   transform: none !important;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .liquid-glass-card:hover {
@@ -310,6 +314,10 @@ body[data-mode="light"] .liquid-glass-dropdown [role="option"][aria-selected="tr
   -webkit-backdrop-filter: blur(10px);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 .apple-glass-row:hover {
   background: rgba(255, 255, 255, 0.055);
@@ -343,17 +351,13 @@ body[data-mode="light"] .apple-glass-row:hover {
    Liquid Glass Segmented Control & Fluid Selection Lens
    (Identical to projects-portal liquid-glass.css & liquid-glass-ui.js)
    ========================================================= */
-/* =========================================================
-   Liquid Glass Segmented Control & Fluid Selection Lens
-   (Exact match with projects-portal liquid-glass.css)
-   ========================================================= */
 .liquid-segment-group,
 .apple-glass-segment-group,
 .category-control,
 .sort-control {
   display: flex;
   position: relative;
-  padding: 5px;
+  padding: 4px;
   gap: 2px;
   border-radius: 999px;
   touch-action: pan-y;
@@ -366,6 +370,15 @@ body[data-mode="light"] .apple-glass-row:hover {
     0 1px 1px rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.liquid-segment-group::-webkit-scrollbar,
+.apple-glass-segment-group::-webkit-scrollbar {
+  display: none;
 }
 
 :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control)::before {
@@ -376,15 +389,16 @@ body[data-mode="light"] .apple-glass-row:hover {
 .apple-glass-segment-group .tab-btn,
 .apple-glass-segment-btn,
 .tab-btn {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 42px;
-  padding: 8px 18px;
+  gap: 4px;
+  min-height: 40px;
+  padding: 6px 10px;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   border-radius: 999px;
@@ -398,6 +412,8 @@ body[data-mode="light"] .apple-glass-row:hover {
   cursor: pointer;
   text-align: center;
   white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
   user-select: none;
 }
 .liquid-segment-group .tab-btn:hover:not(:disabled),
@@ -436,7 +452,7 @@ body[data-mode="light"] .apple-glass-row:hover {
   box-sizing: border-box;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .liquid-segment-group,
   .apple-glass-segment-group {
     padding: 3px !important;
@@ -446,13 +462,13 @@ body[data-mode="light"] .apple-glass-row:hover {
   .apple-glass-segment-group .tab-btn,
   .tab-btn {
     min-height: 36px !important;
-    padding: 6px 6px !important;
+    padding: 5px 6px !important;
     font-size: 0.76rem !important;
     letter-spacing: -0.025em !important;
   }
   .apple-glass-row {
-    padding: 12px 12px !important;
-    border-radius: 16px !important;
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
     gap: 10px !important;
   }
   .liquid-glass-card {
@@ -520,6 +536,9 @@ body[data-mode="light"] .apple-glass-row:hover {
   -webkit-backdrop-filter: blur(10px);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .apple-glass-player-card:hover {
   background: rgba(255, 255, 255, 0.055);

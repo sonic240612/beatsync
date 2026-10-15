@@ -97,6 +97,7 @@ export default function TimelineMode() {
     if (!el) return;
 
     const handleTimeUpdate = () => {
+      if (activeYouTubeId) return;
       const cur = el.currentTime || 0;
       setAudioElapsed(cur);
       if (!activeReveal && cur >= snippetSec) {
@@ -111,7 +112,7 @@ export default function TimelineMode() {
     return () => {
       el.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [snippetSec, activeReveal]);
+  }, [snippetSec, activeReveal, activeYouTubeId]);
 
   // Audio Playback handler
   useEffect(() => {
@@ -425,15 +426,15 @@ export default function TimelineMode() {
   const hasVoted = !!me && skipVotes.includes(me);
 
   // Game Over
-  if (over) {
-    const winnerId = over.winnerId;
+  if (over || state?.phase === 'finished') {
+    const winnerId = over?.winnerId || state?.winnerId;
     const winnerPlayer = (state?.players || []).find(p => p.id === winnerId);
-    const isWinnerMe = winnerId === me;
+    const isWinnerMe = !!winnerId && winnerId === me;
     const rawWinnerCards = state?.timelines?.[winnerId ?? ''] ?? over?.timelines?.[winnerId ?? ''] ?? [];
     const winnerTimeline: TimelineEntry[] = Array.isArray(rawWinnerCards) ? rawWinnerCards.map(resolveCard) : [];
 
     return (
-      <section data-liquid-surface className="liquid-glass-card p-6 sm:p-10 text-center space-y-8 animate-in fade-in duration-300">
+      <section data-liquid-surface className="liquid-glass-card p-6 sm:p-10 text-center space-y-8 animate-in fade-in duration-300 max-w-full overflow-hidden">
         {/* Victory Header Banner */}
         <div className="space-y-4">
           <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-400/20 text-4xl shadow-inner border border-amber-400/40 animate-bounce">
@@ -602,24 +603,30 @@ export default function TimelineMode() {
   }
 
   return (
-    <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
+    <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6 max-w-full overflow-hidden">
       <audio
         ref={audio}
-        src={state?.preview?.url || undefined}
+        src={activeYouTubeId ? undefined : (state?.preview?.url || undefined)}
         preload="none"
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPlay={() => {
+          if (!activeYouTubeId) setIsPlaying(true);
+        }}
+        onPause={() => {
+          if (!activeYouTubeId) setIsPlaying(false);
+        }}
         onEnded={() => {
-          setIsPlaying(false);
-          setAudioEnded(true);
-          setAudioElapsed(snippetSec);
+          if (!activeYouTubeId) {
+            setIsPlaying(false);
+            setAudioEnded(true);
+            setAudioElapsed(snippetSec);
+          }
         }}
         onTimeUpdate={() => {
-          if (audio.current) {
+          if (!activeYouTubeId && audio.current) {
             setAudioElapsed(audio.current.currentTime);
           }
         }}
-        onError={handleAudioError}
+        onError={activeYouTubeId ? undefined : handleAudioError}
       />
       <HiddenYouTubePlayer
         videoId={activeYouTubeId}
@@ -1017,59 +1024,70 @@ export default function TimelineMode() {
             </span>
             <p className="text-xs text-slate-400 mt-1.5">
               {activeReveal.timeout
-                ? `60초 제한 시간이 지나 카드가 버려졌습니다. (실제 발매연도: ${activeReveal.track.year}년)`
+                ? `60초 제한 시간이 지나 카드가 버려졌습니다.${activeReveal?.track?.year ? ` (실제 발매연도: ${activeReveal.track.year}년)` : ''}`
                 : activeReveal.success !== false
                 ? '축하합니다! 카드를 내 타임라인에 안전하게 보관했습니다.'
-                : `실제 발매연도는 ${activeReveal.track.year}년입니다. 연대순과 맞지 않아 카드가 버려졌습니다.`}
+                : `실제 발매연도는 ${activeReveal?.track?.year ?? '????'}년입니다. 연대순과 맞지 않아 카드가 버려졌습니다.`}
             </p>
           </div>
 
           {/* Track Information Card */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-1">
-            {activeReveal.track.coverUrl ? (
-              <img
-                src={activeReveal.track.coverUrl}
-                alt={activeReveal.track.title}
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = 'flex';
-                }}
-                className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl object-cover border-2 border-white/20 shadow-xl"
-              />
-            ) : null}
-            <div
-              style={{ display: activeReveal.track.coverUrl ? 'none' : 'flex' }}
-              className="h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-2xl bg-slate-800 text-3xl text-slate-400"
-            >
-              🎵
-            </div>
-            <div className="text-center sm:text-left space-y-1.5">
-              <div className="inline-flex items-center gap-2 rounded-2xl bg-amber-400/25 border-2 border-amber-400/60 px-4 py-1.5 font-mono font-black text-amber-300 shadow-md">
-                <span className="text-xs sm:text-sm uppercase tracking-wider text-amber-200/90">발매연도</span>
-                <span className="text-2xl sm:text-3xl text-amber-200">{activeReveal.track.year}년</span>
-              </div>
-              <h4 className="text-xl sm:text-2xl font-black">
-                {activeReveal.track.rawTitle || activeReveal.track.title}
-              </h4>
-              <p className="text-sm sm:text-base text-slate-300 font-semibold">
-                {activeReveal.track.rawArtist || activeReveal.track.artist}
-              </p>
+          {(() => {
+            const track = activeReveal.track;
+            const coverUrl = track?.coverUrl;
+            const displayTitle = track?.rawTitle || track?.title || '곡 정보';
+            const displayArtist = track?.rawArtist || track?.artist || '가수 정보';
+            const yearText = track?.year ? `${track.year}년` : '????년';
+            const spotifyUrl = track?.spotifyUrl;
 
-              {activeReveal.track.spotifyUrl && (
-                <div className="pt-2">
-                  <a
-                    href={activeReveal.track.spotifyUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-400/30 transition-colors"
-                  >
-                    <span>Spotify에서 듣기</span> ↗
-                  </a>
+            return (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-1">
+                {coverUrl ? (
+                  <img
+                    src={coverUrl}
+                    alt={displayTitle}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                    className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl object-cover border-2 border-white/20 shadow-xl"
+                  />
+                ) : null}
+                <div
+                  style={{ display: coverUrl ? 'none' : 'flex' }}
+                  className="h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-2xl bg-slate-800 text-3xl text-slate-400"
+                >
+                  🎵
                 </div>
-              )}
-            </div>
-          </div>
+                <div className="text-center sm:text-left space-y-1.5">
+                  <div className="inline-flex items-center gap-2 rounded-2xl bg-amber-400/25 border-2 border-amber-400/60 px-4 py-1.5 font-mono font-black text-amber-300 shadow-md">
+                    <span className="text-xs sm:text-sm uppercase tracking-wider text-amber-200/90">발매연도</span>
+                    <span className="text-2xl sm:text-3xl text-amber-200">{yearText}</span>
+                  </div>
+                  <h4 className="text-xl sm:text-2xl font-black">
+                    {displayTitle}
+                  </h4>
+                  <p className="text-sm sm:text-base text-slate-300 font-semibold">
+                    {displayArtist}
+                  </p>
+
+                  {spotifyUrl && (
+                    <div className="pt-2">
+                      <a
+                        href={spotifyUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-400/30 transition-colors"
+                      >
+                        <span>Spotify에서 듣기</span> ↗
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Manual Next Turn Skip Button (NO Auto Timer in Timeline Mode!) */}
           <div className="pt-3 border-t border-slate-700/40 flex flex-col items-center justify-center gap-2">

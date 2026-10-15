@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '@/lib/game';
-import { LiquidSegmentGroup } from './liquid-segment-group';
 
 interface VolumeControlProps {
   variant?: 'popover' | 'inline';
@@ -14,7 +13,6 @@ interface VolumeControlProps {
 export function VolumeControl({
   variant = 'popover',
   className = '',
-  showPresets = true,
 }: VolumeControlProps) {
   const { volume, setVolume } = useGame();
   const [open, setOpen] = useState(false);
@@ -67,15 +65,6 @@ export function VolumeControl({
     );
   };
 
-  const PRESETS = [
-    { label: '음소거', val: 0, title: '음소거 (0%)' },
-    { label: '5%', val: 0.05, title: '기본 권장 음량 (5%)' },
-    { label: '10%', val: 0.1, title: '10%' },
-    { label: '20%', val: 0.2, title: '20%' },
-    { label: '50%', val: 0.5, title: '50%' },
-    { label: '80%', val: 0.8, title: '80%' },
-  ];
-
   if (variant === 'inline') {
     return (
       <div className={`space-y-3.5 ${className}`}>
@@ -84,7 +73,7 @@ export function VolumeControl({
             <span>🔊 노래 재생 음량</span>
             <span className="text-emerald-400 font-mono text-xs font-bold">({percent}%)</span>
           </label>
-          <span className="text-[11px] text-slate-400">기본 5%로 부드럽게 재생됩니다</span>
+          <span className="text-[11px] text-slate-400">슬라이더로 조절됩니다</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -113,22 +102,6 @@ export function VolumeControl({
             {percent}%
           </span>
         </div>
-
-        {showPresets && (
-          <LiquidSegmentGroup
-            value={PRESETS.find(p => Math.round(p.val * 100) === percent)?.val ?? -1}
-            onChange={val => {
-              if (val >= 0) setVolume(val);
-            }}
-            options={PRESETS.map(p => ({
-              value: p.val,
-              label: p.label,
-              title: p.title,
-            }))}
-            accent="emerald"
-            className="w-full volume-presets-control"
-          />
-        )}
       </div>
     );
   }
@@ -219,28 +192,6 @@ export function VolumeControl({
                   />
                 </div>
               </div>
-
-              {/* Preset Buttons */}
-              {showPresets && (
-                <div className="space-y-1.5 pt-3 border-t border-white/10">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                    빠른 음량 프리셋
-                  </span>
-                  <LiquidSegmentGroup
-                    value={PRESETS.find(p => Math.round(p.val * 100) === percent)?.val ?? -1}
-                    onChange={val => {
-                      if (val >= 0) setVolume(val);
-                    }}
-                    options={PRESETS.map(p => ({
-                      value: p.val,
-                      label: p.label,
-                      title: p.title,
-                    }))}
-                    accent="emerald"
-                    className="w-full volume-presets-control"
-                  />
-                </div>
-              )}
 
               {/* Footer */}
               <div className="pt-3 border-t border-white/10 flex items-center justify-between">

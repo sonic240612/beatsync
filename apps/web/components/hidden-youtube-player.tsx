@@ -75,6 +75,19 @@ export function HiddenYouTubePlayer({
   const playerRef = useRef<any>(null);
   const isLoadedRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const prevReplayKeyRef = useRef(replayKey);
+  const prevVideoIdRef = useRef(videoId);
+
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  onTimeUpdateRef.current = onTimeUpdate;
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
+  const onPlayRef = useRef(onPlay);
+  onPlayRef.current = onPlay;
+  const onPauseRef = useRef(onPause);
+  onPauseRef.current = onPause;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   // Sync volume to YouTube player
   useEffect(() => {
@@ -97,20 +110,20 @@ export function HiddenYouTubePlayer({
         try {
           const current = playerRef.current.getCurrentTime();
           const elapsed = Math.max(0, current - startSeconds);
-          if (onTimeUpdate) onTimeUpdate(elapsed);
+          if (onTimeUpdateRef.current) onTimeUpdateRef.current(elapsed);
           if (current >= startSeconds + snippetSeconds) {
             playerRef.current.pauseVideo();
-            if (onEnded) onEnded();
+            if (onEndedRef.current) onEndedRef.current();
             if (intervalRef.current) clearInterval(intervalRef.current);
           }
         } catch {}
       }
-    }, 150);
+    }, 100);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPlaying, startSeconds, snippetSeconds, onEnded, onTimeUpdate]);
+  }, [isPlaying, startSeconds, snippetSeconds]);
 
   // Initialize and update player when videoId changes
   useEffect(() => {
@@ -154,12 +167,12 @@ export function HiddenYouTubePlayer({
             },
             onStateChange: (event: any) => {
               // YT.PlayerState: PLAYING = 1, PAUSED = 2, ENDED = 0
-              if (event.data === 1 && onPlay) onPlay();
-              if (event.data === 2 && onPause) onPause();
-              if (event.data === 0 && onEnded) onEnded();
+              if (event.data === 1 && onPlayRef.current) onPlayRef.current();
+              if (event.data === 2 && onPauseRef.current) onPauseRef.current();
+              if (event.data === 0 && onEndedRef.current) onEndedRef.current();
             },
             onError: () => {
-              if (onError) onError();
+              if (onErrorRef.current) onErrorRef.current();
             },
           },
         });
@@ -184,19 +197,27 @@ export function HiddenYouTubePlayer({
     };
   }, [videoId, startSeconds]);
 
-  // Handle isPlaying prop changes and replay triggers
+  // Handle isPlaying prop changes and explicit replay triggers
   useEffect(() => {
     if (!playerRef.current || !videoId) return;
     try {
-      if (isPlaying) {
+      const isNewVideo = prevVideoIdRef.current !== videoId;
+      const isReplay = prevReplayKeyRef.current !== replayKey;
+      prevVideoIdRef.current = videoId;
+      prevReplayKeyRef.current = replayKey;
+
+      if (isReplay || isNewVideo) {
         playerRef.current.seekTo(startSeconds, true);
-        if (onTimeUpdate) onTimeUpdate(0);
+        if (onTimeUpdateRef.current) onTimeUpdateRef.current(0);
+      }
+
+      if (isPlaying) {
         playerRef.current.playVideo();
       } else {
         playerRef.current.pauseVideo();
       }
     } catch {}
-  }, [isPlaying, videoId, replayKey, startSeconds, onTimeUpdate]);
+  }, [isPlaying, videoId, replayKey, startSeconds]);
 
   return (
     <div

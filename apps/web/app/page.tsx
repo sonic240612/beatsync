@@ -355,7 +355,7 @@ export default function Home() {
       {inRoom && (
         <div className="space-y-6">
           {/* Room Header Card (Apple visionOS Floating Bar) */}
-          <section data-liquid-surface className="liquid-glass-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 sm:p-6">
+          <section data-liquid-surface className="liquid-glass-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 sm:p-6 min-w-0 max-w-full overflow-hidden">
             <div className="flex items-center justify-between sm:justify-start gap-3">
               {/* Room Code Display Capsule */}
               <div className="flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
@@ -440,7 +440,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Main Column (Right on PC, 7 cols on lg, 8 cols on xl): Game Settings & Start Action */}
               <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 space-y-6 min-w-0">
-                <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-5 sm:space-y-6">
+                <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-5 sm:space-y-6 min-w-0 max-w-full overflow-hidden">
                   {/* Settings Header */}
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
                     <div className="flex items-center gap-3">
@@ -463,9 +463,9 @@ export default function Home() {
                   </div>
 
                   {/* Setting Inset Rows */}
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 min-w-0 max-w-full">
                     {/* Game Mode */}
-                    <div className="apple-glass-row">
+                    <div className="apple-glass-row min-w-0 max-w-full">
                       <div className="flex items-center gap-2.5">
                         <span className="text-lg">{state.settings.mode === 'speed' ? '⚡' : '🃏'}</span>
                         <div>
@@ -513,7 +513,7 @@ export default function Home() {
 
                     {/* Custom Spotify Playlist URL if selected */}
                     {state.settings.musicSource === 'spotify_playlist' && (
-                      <div className="apple-glass-row sm:col-span-2 space-y-3">
+                      <div className="apple-glass-row md:col-span-2 space-y-3 min-w-0 max-w-full">
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">🔗</span>
                           <div>
@@ -571,7 +571,7 @@ export default function Home() {
 
                     {/* Spotify Random Shuffle Notice */}
                     {state.settings.musicSource === 'spotify_random' && (
-                      <div className="sm:col-span-2 rounded-2xl border border-emerald-300 dark:border-emerald-400/25 bg-emerald-100/70 dark:bg-emerald-400/10 p-3.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm">
+                      <div className="md:col-span-2 rounded-2xl border border-emerald-300 dark:border-emerald-400/25 bg-emerald-100/70 dark:bg-emerald-400/10 p-3.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
                         <span className="text-lg shrink-0">🎲</span>
                         <div className="leading-relaxed">
                           <strong className="font-black text-emerald-950 dark:text-white">완전 랜덤 셔플 활성화:</strong> K-Pop, Pop, J-Pop 등 모든 장르와 연대를 무작위로 혼합하여 매 라운드 예측 불가능한 문제가 출제됩니다!
@@ -581,7 +581,7 @@ export default function Home() {
 
                     {/* Timeline Mode Curated Catalog Notice */}
                     {state.settings.musicSource === 'timeline_all' && (
-                      <div className="sm:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/25 bg-sky-100/70 dark:bg-sky-400/10 p-3.5 text-xs text-sky-900 dark:text-sky-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm">
+                      <div className="md:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/25 bg-sky-100/70 dark:bg-sky-400/10 p-3.5 text-xs text-sky-900 dark:text-sky-200 flex items-center gap-2.5 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
                         <span className="text-lg shrink-0">⏳</span>
                         <div className="leading-relaxed">
                           <strong className="font-black text-sky-950 dark:text-white">타임라인 특화 카탈로그:</strong> 1970년대 전설의 명곡부터 80·90 레트로, 2000·2010 명곡, 2026 최신곡까지 6개 시대의 음악이 매 라운드 고르게 순환 출제되어 연도 맞추기에 최적화되었습니다!
@@ -593,7 +593,7 @@ export default function Home() {
                     {state.settings.mode === 'speed' && (
                       <>
                         {/* Answer Criteria */}
-                        <div className="apple-glass-row">
+                        <div className="apple-glass-row min-w-0 max-w-full">
                           <div className="flex items-center gap-2.5">
                             <span className="text-lg">🎯</span>
                             <div>
@@ -616,7 +616,7 @@ export default function Home() {
                         </div>
 
                         {/* Preview Snippet Duration */}
-                        <div className="apple-glass-row">
+                        <div className="apple-glass-row min-w-0 max-w-full">
                           <div className="flex items-center gap-2.5">
                             <span className="text-lg">⏱️</span>
                             <div>
@@ -639,7 +639,7 @@ export default function Home() {
                         </div>
 
                         {/* Total Rounds */}
-                        <div className="apple-glass-row sm:col-span-2">
+                        <div className="apple-glass-row md:col-span-2 min-w-0 max-w-full">
                           <div className="flex items-center gap-2.5">
                             <span className="text-lg">🏆</span>
                             <div>
@@ -668,7 +668,7 @@ export default function Home() {
                     {/* Timeline Mode Options */}
                     {state.settings.mode === 'timeline' && (
                       <>
-                        <div className="apple-glass-row sm:col-span-2 space-y-3">
+                        <div className="apple-glass-row md:col-span-2 space-y-3 min-w-0 max-w-full">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                               <span className="text-lg">🃏</span>
@@ -717,7 +717,7 @@ export default function Home() {
                         </div>
 
                         {/* Preview Snippet Duration */}
-                        <div className="apple-glass-row sm:col-span-2">
+                        <div className="apple-glass-row md:col-span-2 min-w-0 max-w-full">
                           <div className="flex items-center gap-2.5">
                             <span className="text-lg">⏱️</span>
                             <div>
@@ -739,7 +739,7 @@ export default function Home() {
                           />
                         </div>
 
-                        <div className="sm:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/20 bg-sky-100/70 dark:bg-sky-400/5 p-4 text-xs leading-relaxed text-sky-900 dark:text-sky-200/90 backdrop-blur-sm shadow-sm">
+                        <div className="md:col-span-2 rounded-2xl border border-sky-300 dark:border-sky-400/20 bg-sky-100/70 dark:bg-sky-400/5 p-4 text-xs leading-relaxed text-sky-900 dark:text-sky-200/90 backdrop-blur-sm shadow-sm min-w-0 max-w-full">
                           💡 <strong className="font-black text-sky-950 dark:text-white">타임라인 모드 규칙</strong>: 플레이어는 시작 카드 2장(발매연도 공개)으로 시작합니다. 매 턴 노래를 듣고 내 타임라인 카드 사이의 올바른 연대순 슬롯을 선택해 먼저 <strong className="font-black text-sky-950 dark:text-white">{timelineTargetCards}장</strong>을 채우는 사람이 승리합니다!
                         </div>
                       </>

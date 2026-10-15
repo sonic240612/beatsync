@@ -70,6 +70,7 @@ export default function SpeedMode() {
     if (!el) return;
 
     const handleTimeUpdate = () => {
+      if (activeYouTubeId) return;
       const cur = el.currentTime || 0;
       setAudioElapsed(cur);
       if (!activeReveal && cur >= snippetSec) {
@@ -84,7 +85,7 @@ export default function SpeedMode() {
     return () => {
       el.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [snippetSec, round, activeReveal]);
+  }, [snippetSec, round, activeReveal, activeYouTubeId]);
 
   // Automatically focus the single input field when a new round starts
   useEffect(() => {
@@ -389,18 +390,20 @@ export default function SpeedMode() {
   const hasVoted = !!me && skipVotes.includes(me);
 
   // Game Over Podium
-  if (over) {
-    const highestScore = Math.max(...Object.values(over.scores), 0);
-    const winners = players.filter(p => (scores[p.id] ?? 0) === highestScore && highestScore > 0);
+  if (over || state?.phase === 'finished') {
+    const safeScores = over?.scores || scores || {};
+    const scoreValues = Object.values(safeScores);
+    const highestScore = scoreValues.length > 0 ? Math.max(...scoreValues, 0) : 0;
+    const winners = players.filter(p => (safeScores[p.id] ?? scores[p.id] ?? 0) === highestScore && highestScore > 0);
 
     return (
-      <section data-liquid-surface className="liquid-glass-card p-8 sm:p-12 text-center space-y-6">
+      <section data-liquid-surface className="liquid-glass-card p-6 sm:p-10 md:p-12 text-center space-y-6 max-w-full overflow-hidden">
         <div className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-400/20 text-3xl shadow-inner border border-amber-400/30">
           🏆
         </div>
         <div>
-          <h2 className="text-3xl font-black tracking-tight">게임 종료</h2>
-          <p className="mt-2 text-base text-emerald-400 font-semibold">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">게임 종료</h2>
+          <p className="mt-2 text-sm sm:text-base text-emerald-400 font-semibold">
             {winners.length > 1
               ? `공동 우승: ${winners.map(w => w.name).join(', ')}!`
               : winners.length === 1
@@ -420,14 +423,14 @@ export default function SpeedMode() {
                   : 'border-slate-700/50 bg-slate-800/40 text-slate-300'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm opacity-70">#{idx + 1}</span>
-                <span>
+              <div className="flex items-center gap-3 min-w-0 truncate">
+                <span className="font-mono text-sm opacity-70 shrink-0">#{idx + 1}</span>
+                <span className="truncate">
                   {player.name}
-                  {player.id === me && <span className="ml-1.5 text-xs text-emerald-400">(나)</span>}
+                  {player.id === me && <span className="ml-1.5 text-xs text-emerald-400 font-bold">(나)</span>}
                 </span>
               </div>
-              <span className="font-mono text-base font-black">{scores[player.id] ?? 0}점</span>
+              <span className="font-mono text-base font-black shrink-0 ml-2">{(safeScores[player.id] ?? scores[player.id] ?? 0)}점</span>
             </div>
           ))}
         </div>
@@ -438,24 +441,30 @@ export default function SpeedMode() {
   }
 
   return (
-    <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6">
+    <section data-liquid-surface className="liquid-glass-card p-4 sm:p-8 space-y-4 sm:space-y-6 max-w-full overflow-hidden">
       <audio
         ref={audio}
-        src={state?.preview?.url || undefined}
+        src={activeYouTubeId ? undefined : (state?.preview?.url || undefined)}
         preload="none"
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPlay={() => {
+          if (!activeYouTubeId) setIsPlaying(true);
+        }}
+        onPause={() => {
+          if (!activeYouTubeId) setIsPlaying(false);
+        }}
         onEnded={() => {
-          setIsPlaying(false);
-          setAudioEnded(true);
-          setAudioElapsed(snippetSec);
+          if (!activeYouTubeId) {
+            setIsPlaying(false);
+            setAudioEnded(true);
+            setAudioElapsed(snippetSec);
+          }
         }}
         onTimeUpdate={() => {
-          if (audio.current) {
+          if (!activeYouTubeId && audio.current) {
             setAudioElapsed(audio.current.currentTime);
           }
         }}
-        onError={handleAudioError}
+        onError={activeYouTubeId ? undefined : handleAudioError}
       />
       <HiddenYouTubePlayer
         videoId={activeYouTubeId}
@@ -755,52 +764,63 @@ export default function SpeedMode() {
           </div>
 
           {/* Album Artwork & Details */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-1">
-            {activeReveal.track.coverUrl ? (
-              <img
-                src={activeReveal.track.coverUrl}
-                alt={activeReveal.track.title}
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = 'flex';
-                }}
-                className="h-32 w-32 sm:h-36 sm:w-36 rounded-2xl object-cover shadow-2xl border-2 border-white/20"
-              />
-            ) : null}
-            <div
-              style={{ display: activeReveal.track.coverUrl ? 'none' : 'flex' }}
-              className="h-32 w-32 sm:h-36 sm:w-36 items-center justify-center rounded-2xl bg-slate-800 text-4xl text-slate-400 border border-slate-700"
-            >
-              🎵
-            </div>
+          {(() => {
+            const track = activeReveal.track;
+            const coverUrl = track?.coverUrl;
+            const displayTitle = track?.rawTitle || track?.title || '곡 정보';
+            const displayArtist = track?.rawArtist || track?.artist || '가수 정보';
+            const yearText = track?.year ? `발매연도: ${track.year}년` : '';
+            const spotifyUrl = track?.spotifyUrl;
 
-            <div className="text-center sm:text-left space-y-1.5 max-w-sm">
-              <div className="inline-block rounded-md bg-emerald-400/20 px-2 py-0.5 text-[11px] font-mono font-bold text-emerald-300">
-                곡 정보
-              </div>
-              <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                {activeReveal.track.rawTitle || activeReveal.track.title}
-              </h3>
-              <p className="text-base sm:text-lg text-slate-200 font-bold">
-                {activeReveal.track.rawArtist || activeReveal.track.artist}
-              </p>
-              <p className="text-xs text-slate-400 font-mono">발매연도: {activeReveal.track.year}년</p>
-
-              {activeReveal.track.spotifyUrl && (
-                <div className="pt-2">
-                  <a
-                    href={activeReveal.track.spotifyUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-400/30 transition-colors shadow-sm"
-                  >
-                    <span>Spotify에서 듣기</span> ↗
-                  </a>
+            return (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-1">
+                {coverUrl ? (
+                  <img
+                    src={coverUrl}
+                    alt={displayTitle}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                    className="h-32 w-32 sm:h-36 sm:w-36 rounded-2xl object-cover shadow-2xl border-2 border-white/20"
+                  />
+                ) : null}
+                <div
+                  style={{ display: coverUrl ? 'none' : 'flex' }}
+                  className="h-32 w-32 sm:h-36 sm:w-36 items-center justify-center rounded-2xl bg-slate-800 text-4xl text-slate-400 border border-slate-700"
+                >
+                  🎵
                 </div>
-              )}
-            </div>
-          </div>
+
+                <div className="text-center sm:text-left space-y-1.5 max-w-sm">
+                  <div className="inline-block rounded-md bg-emerald-400/20 px-2 py-0.5 text-[11px] font-mono font-bold text-emerald-300">
+                    곡 정보
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    {displayTitle}
+                  </h3>
+                  <p className="text-base sm:text-lg text-slate-200 font-bold">
+                    {displayArtist}
+                  </p>
+                  {yearText && <p className="text-xs text-slate-400 font-mono">{yearText}</p>}
+
+                  {spotifyUrl && (
+                    <div className="pt-2">
+                      <a
+                        href={spotifyUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-3.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-400/30 transition-colors shadow-sm"
+                      >
+                        <span>Spotify에서 듣기</span> ↗
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 1-Minute Auto-Advance Countdown & Skip Button */}
           <div className="pt-3 border-t border-slate-700/40 flex flex-col items-center justify-center gap-2">
