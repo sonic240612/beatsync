@@ -55,6 +55,7 @@ interface HiddenYouTubePlayerProps {
   onPause?: () => void;
   onEnded?: () => void;
   onError?: () => void;
+  onTimeUpdate?: (elapsed: number) => void;
 }
 
 export function HiddenYouTubePlayer({
@@ -68,6 +69,7 @@ export function HiddenYouTubePlayer({
   onPause,
   onEnded,
   onError,
+  onTimeUpdate,
 }: HiddenYouTubePlayerProps) {
   const containerId = useRef(`yt-player-${Math.random().toString(36).slice(2, 9)}`);
   const playerRef = useRef<any>(null);
@@ -94,6 +96,8 @@ export function HiddenYouTubePlayer({
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
         try {
           const current = playerRef.current.getCurrentTime();
+          const elapsed = Math.max(0, current - startSeconds);
+          if (onTimeUpdate) onTimeUpdate(elapsed);
           if (current >= startSeconds + snippetSeconds) {
             playerRef.current.pauseVideo();
             if (onEnded) onEnded();
@@ -101,12 +105,12 @@ export function HiddenYouTubePlayer({
           }
         } catch {}
       }
-    }, 250);
+    }, 150);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPlaying, startSeconds, snippetSeconds, onEnded]);
+  }, [isPlaying, startSeconds, snippetSeconds, onEnded, onTimeUpdate]);
 
   // Initialize and update player when videoId changes
   useEffect(() => {
@@ -186,12 +190,13 @@ export function HiddenYouTubePlayer({
     try {
       if (isPlaying) {
         playerRef.current.seekTo(startSeconds, true);
+        if (onTimeUpdate) onTimeUpdate(0);
         playerRef.current.playVideo();
       } else {
         playerRef.current.pauseVideo();
       }
     } catch {}
-  }, [isPlaying, videoId, replayKey, startSeconds]);
+  }, [isPlaying, videoId, replayKey, startSeconds, onTimeUpdate]);
 
   return (
     <div

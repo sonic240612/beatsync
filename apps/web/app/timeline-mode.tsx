@@ -49,6 +49,7 @@ export default function TimelineMode() {
   const endsAt = state?.endsAt;
   const seconds = useCountdown(endsAt);
   const [audioEnded, setAudioEnded] = useState(false);
+  const [audioElapsed, setAudioElapsed] = useState(0);
 
   const currentTurnPlayer = (state?.players || []).find(p => p.id === turn);
 
@@ -87,6 +88,7 @@ export default function TimelineMode() {
     setAudioLoadError(false);
     setIsResolvingAudio(false);
     setAudioEnded(false);
+    setAudioElapsed(0);
   }, [round]);
 
   // Stop audio playback once snippet duration (e.g. 15s) has elapsed during guessing
@@ -95,10 +97,13 @@ export default function TimelineMode() {
     if (!el) return;
 
     const handleTimeUpdate = () => {
-      if (!activeReveal && el.currentTime >= snippetSec) {
+      const cur = el.currentTime || 0;
+      setAudioElapsed(cur);
+      if (!activeReveal && cur >= snippetSec) {
         el.pause();
         setIsPlaying(false);
         setAudioEnded(true);
+        setAudioElapsed(snippetSec);
       }
     };
 
@@ -126,6 +131,7 @@ export default function TimelineMode() {
     if (activeReveal) {
       el.pause();
       setIsPlaying(false);
+      setAudioElapsed(0);
       return;
     }
 
@@ -245,6 +251,7 @@ export default function TimelineMode() {
     if (isResolvingAudio) return;
 
     if (activeYouTubeId) {
+      setAudioElapsed(0);
       setIsPlaying(true);
       setAudioBlocked(false);
       setReplayKey(k => k + 1);
@@ -267,6 +274,7 @@ export default function TimelineMode() {
       if (el.currentTime >= snippetSec) {
         el.currentTime = 0;
       }
+      setAudioElapsed(el.currentTime || 0);
       el.play()
         .then(() => {
           setAudioBlocked(false);
@@ -315,6 +323,7 @@ export default function TimelineMode() {
   };
 
   const handleReplay = () => {
+    setAudioElapsed(0);
     if (activeYouTubeId) {
       setIsPlaying(true);
       setAudioEnded(false);
@@ -603,6 +612,12 @@ export default function TimelineMode() {
         onEnded={() => {
           setIsPlaying(false);
           setAudioEnded(true);
+          setAudioElapsed(snippetSec);
+        }}
+        onTimeUpdate={() => {
+          if (audio.current) {
+            setAudioElapsed(audio.current.currentTime);
+          }
         }}
         onError={handleAudioError}
       />
@@ -613,6 +628,7 @@ export default function TimelineMode() {
         snippetSeconds={snippetSec}
         volume={volume}
         replayKey={replayKey}
+        onTimeUpdate={setAudioElapsed}
         onPlay={() => {
           setIsPlaying(true);
           setAudioBlocked(false);
@@ -622,6 +638,7 @@ export default function TimelineMode() {
         onEnded={() => {
           setIsPlaying(false);
           setAudioEnded(true);
+          setAudioElapsed(snippetSec);
         }}
         onError={() => {
           setIsPlaying(false);
@@ -848,19 +865,54 @@ export default function TimelineMode() {
             </div>
           )}
 
-          {/* Audio Wave Visualizer & Replay Button */}
-          <div className="flex flex-col items-center justify-center gap-2.5 py-2">
-            <div className="flex items-center justify-center gap-2" aria-hidden="true">
+          {/* Audio Wave Visualizer & Practice-mode style Progress Bar */}
+          <div className="w-full max-w-xl mx-auto space-y-3 py-2 sm:py-3">
+            {/* Top Status & Elapsed Time Header */}
+            <div className="flex items-center justify-between border-b border-slate-700/40 pb-2 px-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isPlaying && !activeReveal ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+                  }`}
+                />
+                {activeReveal
+                  ? '정답 확인 중'
+                  : isResolvingAudio
+                  ? '대체 음원 검색 중...'
+                  : audioLoadError
+                  ? '음원 로드 실패'
+                  : isPlaying
+                  ? `실시간 ${snippetSec}초 고음질 스트리밍`
+                  : audioEnded
+                  ? '미리듣기 종료'
+                  : '미리듣기 준비 중'}
+              </span>
+              <span className="font-mono text-xs text-slate-400">
+                {Math.min(snippetSec, Math.floor(audioElapsed))}s / {snippetSec}s
+              </span>
+            </div>
+
+            {/* Sound Wave Visualizer */}
+            <div className="flex items-center justify-center gap-2 py-1" aria-hidden="true">
               {[20, 38, 28, 54, 40, 64, 48, 34, 50, 36, 24].map((h, i) => (
                 <span
                   key={i}
                   style={{ height: `${isPlaying && !activeReveal ? h : 8}px` }}
                   className={`w-2 sound-bar transition-all duration-200 ${
-                    isPlaying && !activeReveal ? 'opacity-90' : 'opacity-20'
+                    isPlaying && !activeReveal ? 'opacity-90 shadow-sm' : 'opacity-25'
                   }`}
                 />
               ))}
             </div>
+
+            {/* Progress Bar (Practice Mode Style) */}
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/80">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-200"
+                style={{ width: `${Math.min(100, Math.max(0, (audioElapsed / (snippetSec || 30)) * 100))}%` }}
+              />
+            </div>
+
             <p className="text-xs text-slate-400 font-medium text-center">
               {activeReveal
                 ? '정답 확인 중… 이번 곡을 확인하고 다음 턴으로 넘어가세요.'
@@ -874,19 +926,22 @@ export default function TimelineMode() {
                 ? `미리듣기(${snippetSec}초)가 종료되었습니다. 다시 듣거나 남은 시간(${seconds}초) 내에 카드를 배치하세요!`
                 : '오디오 로딩 중…'}
             </p>
+
             {!activeReveal && (state?.preview?.url || activeYouTubeId) && (
-              <button
-                type="button"
-                onClick={handleReplay}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold transition-all shadow-md active:scale-95 ${
-                  isPlaying
-                    ? 'border border-emerald-400/40 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25'
-                    : 'border border-emerald-400 bg-emerald-400/25 text-emerald-200 hover:scale-105 animate-pulse'
-                }`}
-              >
-                <span>🔁</span>
-                <span>{isPlaying ? '처음부터 다시 듣기' : '미리듣기 다시 듣기'}</span>
-              </button>
+              <div className="pt-1 flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={handleReplay}
+                  className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-md active:scale-95 ${
+                    isPlaying
+                      ? 'border border-emerald-400/40 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25'
+                      : 'border border-emerald-400 bg-emerald-400/25 text-emerald-200 hover:bg-emerald-400/35 hover:scale-105 shadow-emerald-500/20 animate-pulse'
+                  }`}
+                >
+                  <span className="text-sm">🔁</span>
+                  <span>{isPlaying ? '처음부터 다시 듣기' : `미리듣기 다시 듣기 (${snippetSec}초)`}</span>
+                </button>
+              </div>
             )}
           </div>
 

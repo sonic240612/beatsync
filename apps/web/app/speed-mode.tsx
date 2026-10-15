@@ -41,6 +41,7 @@ export default function SpeedMode() {
   const activeReveal = reveal || (state?.phase === 'reveal' ? (state?.reveal || null) : null);
   const snippetSec = state?.settings.snippetSeconds || 30;
   const [audioEnded, setAudioEnded] = useState(false);
+  const [audioElapsed, setAudioElapsed] = useState(0);
 
   // 1-minute countdown during reveal stage
   const revealEndsAt = activeReveal?.revealEndsAt;
@@ -60,6 +61,7 @@ export default function SpeedMode() {
     setAudioLoadError(false);
     setIsResolvingAudio(false);
     setAudioEnded(false);
+    setAudioElapsed(0);
   }, [round]);
 
   // Stop audio playback once snippet duration (e.g. 15s) has elapsed during guessing
@@ -68,10 +70,13 @@ export default function SpeedMode() {
     if (!el) return;
 
     const handleTimeUpdate = () => {
-      if (!activeReveal && el.currentTime >= snippetSec) {
+      const cur = el.currentTime || 0;
+      setAudioElapsed(cur);
+      if (!activeReveal && cur >= snippetSec) {
         el.pause();
         setIsPlaying(false);
         setAudioEnded(true);
+        setAudioElapsed(snippetSec);
       }
     };
 
@@ -224,6 +229,7 @@ export default function SpeedMode() {
     if (isResolvingAudio) return;
 
     if (activeYouTubeId) {
+      setAudioElapsed(0);
       setIsPlaying(true);
       setAudioBlocked(false);
       setReplayKey(k => k + 1);
@@ -246,6 +252,7 @@ export default function SpeedMode() {
       if (el.currentTime >= snippetSec) {
         el.currentTime = 0;
       }
+      setAudioElapsed(el.currentTime || 0);
       el.play()
         .then(() => {
           setAudioBlocked(false);
@@ -266,6 +273,7 @@ export default function SpeedMode() {
   };
 
   const handleReplay = () => {
+    setAudioElapsed(0);
     if (activeYouTubeId) {
       setIsPlaying(true);
       setAudioEnded(false);
@@ -440,6 +448,12 @@ export default function SpeedMode() {
         onEnded={() => {
           setIsPlaying(false);
           setAudioEnded(true);
+          setAudioElapsed(snippetSec);
+        }}
+        onTimeUpdate={() => {
+          if (audio.current) {
+            setAudioElapsed(audio.current.currentTime);
+          }
         }}
         onError={handleAudioError}
       />
@@ -450,6 +464,7 @@ export default function SpeedMode() {
         snippetSeconds={snippetSec}
         volume={volume}
         replayKey={replayKey}
+        onTimeUpdate={setAudioElapsed}
         onPlay={() => {
           setIsPlaying(true);
           setAudioBlocked(false);
@@ -459,6 +474,7 @@ export default function SpeedMode() {
         onEnded={() => {
           setIsPlaying(false);
           setAudioEnded(true);
+          setAudioElapsed(snippetSec);
         }}
         onError={() => {
           setIsPlaying(false);
@@ -598,9 +614,35 @@ export default function SpeedMode() {
         </div>
       )}
 
-      {/* Dynamic Sound Visualizer & Replay Controls */}
-      <div className="py-2 sm:py-4 flex flex-col items-center justify-center space-y-2 sm:space-y-3">
-        <div className="flex h-12 sm:h-20 items-end justify-center gap-1 sm:gap-2 px-2 sm:px-4" aria-hidden="true">
+      {/* Sound Visualizer & Progress Bar (Practice Mode Style) */}
+      <div className="w-full max-w-xl mx-auto space-y-3 py-2 sm:py-3">
+        {/* Top Status & Elapsed Time Header */}
+        <div className="flex items-center justify-between border-b border-slate-700/40 pb-2 px-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isPlaying && !activeReveal ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+              }`}
+            />
+            {activeReveal
+              ? '정답 확인 중'
+              : isResolvingAudio
+              ? '대체 음원 검색 중...'
+              : audioLoadError
+              ? '음원 로드 실패'
+              : isPlaying
+              ? `실시간 ${snippetSec}초 고음질 스트리밍`
+              : audioEnded
+              ? '미리듣기 종료'
+              : '미리듣기 준비 중'}
+          </span>
+          <span className="font-mono text-xs text-slate-400">
+            {Math.min(snippetSec, Math.floor(audioElapsed))}s / {snippetSec}s
+          </span>
+        </div>
+
+        {/* Dynamic Sound Wave Visualizer */}
+        <div className="flex h-12 sm:h-16 items-end justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1" aria-hidden="true">
           {[24, 48, 36, 68, 52, 80, 60, 42, 64, 46, 30, 56, 38, 70, 50, 28].map((baseHeight, i) => {
             const dynamicHeight = isPlaying && !activeReveal ? Math.max(10, (baseHeight * 0.6 * (0.6 + Math.sin(Date.now() / 200 + i) * 0.4))) : 6;
             return (
@@ -614,6 +656,15 @@ export default function SpeedMode() {
             );
           })}
         </div>
+
+        {/* Progress Bar (Practice Mode Style) */}
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800/80">
+          <div
+            className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-200"
+            style={{ width: `${Math.min(100, Math.max(0, (audioElapsed / (snippetSec || 30)) * 100))}%` }}
+          />
+        </div>
+
         <p className="text-xs text-slate-400 font-medium text-center">
           {activeReveal
             ? '정답 확인 중… 이번 곡을 확인하고 다음 노래로 넘어가세요.'
