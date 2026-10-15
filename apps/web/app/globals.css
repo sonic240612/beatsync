@@ -1148,3 +1148,272 @@ body[data-mode="light"] :is(.bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-whit
   border-color: rgba(203, 213, 225, 0.8) !important;
   color: #0f172a !important;
 }
+
+/* =========================================================
+   Simple Minimalist Theme (Solid Black & Solid White)
+   ========================================================= */
+
+/* Simple Theme - Global Base (Dark Mode by Default) */
+body[data-theme="simple"] {
+  --bg: #000000;
+  --text: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --spotify: #1ed760;
+  --spotify-hover: #26e66c;
+  --card-bg: #111113;
+  --card-border: 1px solid #27272a;
+  --glass-fill: #111113;
+  --glass-rim: transparent;
+  --glass-shade: transparent;
+  --glass-fallback: #111113;
+  --surface-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  --inner-rim: none;
+  background-color: #000000 !important;
+  color: #f4f4f5 !important;
+}
+
+/* Simple Theme - Light Mode (Solid White) */
+body[data-theme="simple"][data-mode="light"] {
+  --bg: #ffffff;
+  --text: #09090b;
+  --text-secondary: #52525b;
+  --accent: #059669;
+  --accent-hover: #047857;
+  --spotify: #059669;
+  --spotify-hover: #047857;
+  --card-bg: #ffffff;
+  --card-border: 1px solid #e4e4e7;
+  --glass-fill: #ffffff;
+  --glass-rim: transparent;
+  --glass-shade: transparent;
+  --glass-fallback: #ffffff;
+  --surface-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  --inner-rim: none;
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+
+/* 1. Completely hide ambient background scenes, radial gradients & particles */
+body[data-theme="simple"] .liquid-scene,
+body[data-theme="simple"] .liquid-scene-gradient,
+body[data-theme="simple"] .liquid-particles {
+  display: none !important;
+}
+
+/* 2. Remove all optical refraction, conic rim light, and heavy blur */
+body[data-theme="simple"] [data-liquid-surface]::before,
+body[data-theme="simple"] [data-liquid-surface]::after {
+  display: none !important;
+}
+
+body[data-theme="simple"] [data-liquid-surface],
+body[data-theme="simple"] .liquid-glass-card,
+body[data-theme="simple"] .liquid-glass-pill,
+body[data-theme="simple"] .liquid-glass-dropdown,
+body[data-theme="simple"] .liquid-btn-secondary,
+body[data-theme="simple"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transform: none !important;
+}
+
+/* 3. Solid Card & Pill Styling */
+body[data-theme="simple"] .liquid-glass-card {
+  background: var(--card-bg) !important;
+  border: var(--card-border) !important;
+  box-shadow: var(--surface-shadow) !important;
+  border-radius: 20px !important;
+}
+
+body[data-theme="simple"] .liquid-glass-pill {
+  background: var(--card-bg) !important;
+  border: var(--card-border) !important;
+  box-shadow: var(--surface-shadow) !important;
+}
+
+body[data-theme="simple"] .liquid-glass-dropdown {
+  background: var(--card-bg) !important;
+  border: var(--card-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-glass-dropdown {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 4. Minimalist Buttons */
+body[data-theme="simple"] .liquid-btn-primary {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+body[data-theme="simple"] .liquid-btn-primary:hover:not(:disabled) {
+  background: #059669 !important;
+  filter: none !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-btn-primary {
+  background: #059669 !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25) !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-btn-primary:hover:not(:disabled) {
+  background: #047857 !important;
+}
+
+body[data-theme="simple"] .liquid-btn-secondary {
+  background: #18181b !important;
+  border: 1px solid #27272a !important;
+  color: #f4f4f5 !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="simple"] .liquid-btn-secondary:hover:not(:disabled) {
+  background: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #ffffff !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-btn-secondary {
+  background: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+  color: #09090b !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-btn-secondary:hover:not(:disabled) {
+  background: #e4e4e7 !important;
+  border-color: #d4d4d8 !important;
+}
+
+/* 5. Minimalist Segment Controls */
+body[data-theme="simple"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) {
+  background: #161618 !important;
+  border: 1px solid #27272a !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="simple"] .selection-lens {
+  display: none !important;
+}
+
+body[data-theme="simple"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) .tab-btn {
+  color: #a1a1aa !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+body[data-theme="simple"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) .tab-btn:hover:not(:disabled) {
+  color: #ffffff !important;
+}
+
+body[data-theme="simple"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) .tab-btn.active {
+  background: #27272a !important;
+  color: #10b981 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+body[data-theme="simple"][data-mode="light"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) {
+  background: #f4f4f5 !important;
+  border: 1px solid #e4e4e7 !important;
+}
+
+body[data-theme="simple"][data-mode="light"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) .tab-btn {
+  color: #64748b !important;
+}
+
+body[data-theme="simple"][data-mode="light"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) .tab-btn:hover:not(:disabled) {
+  color: #0f172a !important;
+}
+
+body[data-theme="simple"][data-mode="light"] :is(.liquid-segment-group, .apple-glass-segment-group, .category-control, .sort-control) .tab-btn.active {
+  background: #ffffff !important;
+  color: #059669 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 6. Clean Inputs & Range Sliders */
+body[data-theme="simple"] .liquid-input {
+  background: #141416 !important;
+  border: 1px solid #27272a !important;
+  color: #f4f4f5 !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="simple"] .liquid-input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #09090b !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .liquid-input:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+}
+
+body[data-theme="simple"] input[type="range"] {
+  background: #27272a !important;
+  border: 1px solid #3f3f46 !important;
+  box-shadow: none !important;
+}
+
+body[data-theme="simple"][data-mode="light"] input[type="range"] {
+  background: #e4e4e7 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+/* 7. Sub-boxes, Info Cards, Mini Decks */
+body[data-theme="simple"] :is(.bg-slate-800\/40, .bg-slate-800\/50, .bg-slate-900\/60, .bg-slate-900\/40, .bg-white\/\[0\.03\], .bg-white\/5) {
+  background-color: #141416 !important;
+  border-color: #27272a !important;
+}
+
+body[data-theme="simple"][data-mode="light"] :is(.bg-slate-800\/40, .bg-slate-800\/50, .bg-slate-900\/60, .bg-slate-900\/40, .bg-white\/\[0\.03\], .bg-white\/5) {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+body[data-theme="simple"] :is(.border-slate-700\/40, .border-slate-700\/50, .border-slate-700\/60, .border-slate-700\/70, .border-slate-700) {
+  border-color: #27272a !important;
+}
+
+body[data-theme="simple"][data-mode="light"] :is(.border-slate-700\/40, .border-slate-700\/50, .border-slate-700\/60, .border-slate-700\/70, .border-slate-700) {
+  border-color: #e2e8f0 !important;
+}
+
+/* 8. Hero Headline - Solid Clean Text in Simple Theme */
+body[data-theme="simple"] .bg-gradient-to-r.from-emerald-400.via-cyan-400.to-blue-500 {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  color: #10b981 !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .bg-gradient-to-r.from-emerald-400.via-cyan-400.to-blue-500 {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  color: #059669 !important;
+}
+
+/* 9. Modal Overlays */
+body[data-theme="simple"] .fixed.inset-0.bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body[data-theme="simple"][data-mode="light"] .fixed.inset-0.bg-black\/60 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

@@ -31,6 +31,8 @@ export default function Home() {
     me,
     mode,
     toggleMode,
+    themeStyle,
+    toggleThemeStyle,
     connect,
     createRoom,
     joinRoom,
@@ -140,16 +142,32 @@ export default function Home() {
           </div>
         </a>
 
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Simple Theme Toggle Button */}
+          <button
+            onClick={toggleThemeStyle}
+            type="button"
+            title={themeStyle === 'simple' ? '화려한 글래스 테마로 전환' : '깔끔한 심플 테마로 전환'}
+            aria-label="심플 테마 토글"
+            className={`flex h-9 items-center gap-1.5 px-2.5 sm:px-3 rounded-full border text-xs font-semibold transition-all ${
+              themeStyle === 'simple'
+                ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300 shadow-sm'
+                : 'border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white'
+            }`}
+          >
+            <span className="text-sm">{themeStyle === 'simple' ? '⚡' : '✨'}</span>
+            <span className="hidden sm:inline">{themeStyle === 'simple' ? '심플 테마' : '글래스 테마'}</span>
+          </button>
+
           {/* Volume Control Button */}
           <VolumeControl />
-
 
           {/* Theme Toggle Button (Light / Dark) */}
           <button
             onClick={toggleMode}
             type="button"
             aria-label="라이트/다크 모드 전환"
+            title={mode === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-700/60 bg-slate-800/40 text-slate-300 hover:text-white transition-all"
           >
             {mode === 'dark' ? (

@@ -32,7 +32,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
                   var mode = (saved === 'light' || saved === 'dark') ? saved : (prefersDark ? 'dark' : 'light');
                   document.body.dataset.mode = mode;
-                  document.body.dataset.theme = 'liquid-glass';
+
+                  var savedStyle = localStorage.getItem('beatsync-theme-style');
+                  var themeStyle = (savedStyle === 'simple' || savedStyle === 'liquid-glass') ? savedStyle : 'liquid-glass';
+                  document.body.dataset.theme = themeStyle;
                   document.body.dataset.liquidMotion = 'full';
                 } catch(e) {}
               })();

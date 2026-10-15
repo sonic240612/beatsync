@@ -96,6 +96,7 @@ export type Over = {
 
 const SESSION_KEY = 'beatsync-session';
 const THEME_KEY = 'beatsync-theme-mode';
+const THEME_STYLE_KEY = 'beatsync-theme-style';
 const VOLUME_KEY = 'beatsync-volume';
 const DEFAULT_VOLUME = 0.05; // 5% default volume
 
@@ -124,12 +125,15 @@ type Store = {
   over: Over | null;
   error: string;
   mode: 'light' | 'dark';
+  themeStyle: 'liquid-glass' | 'simple';
   volume: number;
   toasts: ToastMessage[];
   addToast: (message: string, type?: ToastMessage['type']) => void;
   removeToast: (id: string) => void;
   setMode: (mode: 'light' | 'dark') => void;
   toggleMode: () => void;
+  setThemeStyle: (style: 'liquid-glass' | 'simple') => void;
+  toggleThemeStyle: () => void;
   setVolume: (volume: number) => void;
   connect: () => Promise<void>;
   createRoom: (name: string, options?: { musicSource?: MusicSource; mode?: 'speed' | 'timeline' }) => Promise<boolean>;
@@ -154,6 +158,7 @@ export const useGame = create<Store>((set, get) => ({
   over: null,
   error: '',
   mode: 'dark',
+  themeStyle: 'liquid-glass',
   volume: DEFAULT_VOLUME,
   toasts: [],
 
@@ -183,6 +188,19 @@ export const useGame = create<Store>((set, get) => ({
     get().setMode(next);
   },
 
+  setThemeStyle: style => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(THEME_STYLE_KEY, style);
+      document.body.dataset.theme = style;
+    }
+    set({ themeStyle: style });
+  },
+
+  toggleThemeStyle: () => {
+    const next = get().themeStyle === 'simple' ? 'liquid-glass' : 'simple';
+    get().setThemeStyle(next);
+  },
+
   setVolume: volume => {
     const clamped = Math.max(0, Math.min(1, Math.round(volume * 100) / 100));
     if (typeof window !== 'undefined') {
@@ -195,13 +213,17 @@ export const useGame = create<Store>((set, get) => ({
 
   connect: () =>
     new Promise((resolve) => {
-      // initialize theme mode and volume
+      // initialize theme mode, theme style and volume
       if (typeof window !== 'undefined') {
         const saved = localStorage.getItem(THEME_KEY);
         const initial = saved === 'light' || saved === 'dark' ? saved : 'dark';
         document.body.dataset.mode = initial;
-        document.body.dataset.theme = 'liquid-glass';
-        set({ mode: initial });
+
+        const savedStyle = localStorage.getItem(THEME_STYLE_KEY);
+        const initialStyle = savedStyle === 'simple' || savedStyle === 'liquid-glass' ? savedStyle : 'liquid-glass';
+        document.body.dataset.theme = initialStyle;
+
+        set({ mode: initial, themeStyle: initialStyle });
 
         const savedVol = localStorage.getItem(VOLUME_KEY);
         if (savedVol !== null) {
