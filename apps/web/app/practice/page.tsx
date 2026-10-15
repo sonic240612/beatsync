@@ -257,8 +257,8 @@ export default function PracticePage() {
         <div data-liquid-surface className="liquid-glass-card p-6 sm:p-10 max-w-xl mx-auto space-y-6">
           <div className="flex items-center justify-between border-b border-slate-700/40 pb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              실시간 30초 고음질 스트리밍
+              <span className={`h-2 w-2 rounded-full ${playing ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+              미리듣기
             </span>
             <span className="font-mono text-xs text-slate-400">
               {Math.floor(elapsed)}s / 30s
