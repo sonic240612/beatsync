@@ -559,7 +559,10 @@ export default function SpeedMode() {
         </div>
       </div>
 
-      {/* Resolving Fallback Notice */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+        {/* Main Quiz Arena (Right on PC, 7~8 cols): order-1 lg:order-2 */}
+        <div className="order-1 lg:order-2 lg:col-span-7 xl:col-span-8 space-y-4 sm:space-y-6 min-w-0">
+          {/* Resolving Fallback Notice */}
       {isResolvingAudio && (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-300 dark:border-sky-500/40 bg-sky-100/70 dark:bg-sky-500/10 px-4 py-2.5 sm:px-5 sm:py-3 text-xs text-sky-900 dark:text-sky-200 backdrop-blur-md shadow-sm">
           <div className="flex items-center gap-2">
@@ -1052,32 +1055,80 @@ export default function SpeedMode() {
         </form>
       )}
 
-      {/* Live Leaderboard */}
-      <section className="pt-2">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">현재 점수판</h4>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {ranking.map((player, idx) => (
-            <div
-              key={player.id}
-              className={`flex items-center justify-between rounded-xl px-4 py-2.5 border transition-all ${
-                player.id === activeReveal?.winnerId
-                  ? 'border-emerald-400 bg-emerald-400/20 text-emerald-200'
-                  : 'border-slate-700/50 bg-slate-800/40 text-slate-300'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="font-mono text-xs opacity-60">#{idx + 1}</span>
-                <span className="text-sm font-medium">
-                  {player.name}
-                  {player.id === me && <span className="ml-1 text-xs text-emerald-400">(나)</span>}
-                  {!player.connected && <span className="ml-1 text-xs text-rose-400">(연결 끊김)</span>}
-                </span>
-              </div>
-              <span className="font-mono text-sm font-black">{scores[player.id] ?? 0}점</span>
-            </div>
-          ))}
         </div>
-      </section>
+
+        {/* Left Column (Live Scoreboard on PC): 4~5 cols: order-2 lg:order-1 */}
+        <aside className="order-2 lg:order-1 lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 space-y-4 min-w-0">
+          <div className="rounded-3xl border border-slate-700/60 bg-slate-900/60 backdrop-blur-md p-4 sm:p-5 space-y-3.5 shadow-lg">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-700/50">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🏆</span>
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">실시간 순위표</h4>
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 font-bold">
+                {ranking.length}명 참여 중
+              </span>
+            </div>
+
+            {/* Live Ranking List */}
+            <div className="space-y-2">
+              {ranking.map((player, idx) => {
+                const isWinner = player.id === activeReveal?.winnerId;
+                const isTitleSolver = activeReveal?.solvers?.title?.playerId === player.id;
+                const isArtistSolver = activeReveal?.solvers?.artist?.playerId === player.id;
+                const isCurrentSolver = isTitleSolver || isArtistSolver;
+
+                return (
+                  <div
+                    key={player.id}
+                    className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 border transition-all ${
+                      isWinner || isCurrentSolver
+                        ? 'border-emerald-400/80 bg-emerald-500/20 text-emerald-200 shadow-sm animate-pulse'
+                        : idx === 0
+                        ? 'border-amber-400/50 bg-amber-400/10 text-amber-200 font-semibold'
+                        : 'border-slate-700/50 bg-slate-800/40 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="font-mono text-xs font-black shrink-0 w-6 text-center">
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
+                      </span>
+                      <div className="truncate">
+                        <span className="text-xs sm:text-sm font-bold truncate block">
+                          {player.name}
+                          {player.id === me && <span className="ml-1 text-[11px] text-emerald-400 font-bold">(나)</span>}
+                        </span>
+                        {!player.connected && (
+                          <span className="text-[10px] text-rose-400 font-medium">연결 끊김</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-1.5 pl-2">
+                      {isTitleSolver && (
+                        <span className="text-[10px] bg-emerald-500/30 text-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                          곡명
+                        </span>
+                      )}
+                      {isArtistSolver && (
+                        <span className="text-[10px] bg-cyan-500/30 text-cyan-200 px-1.5 py-0.5 rounded font-bold">
+                          가수
+                        </span>
+                      )}
+                      <span className="font-mono text-sm font-black">{scores[player.id] ?? 0}점</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Quick Tip in Scoreboard */}
+            <div className="pt-2 border-t border-slate-700/40 text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span>💡</span>
+              <span>제목 또는 가수를 먼저 맞히면 점수를 획득합니다!</span>
+            </div>
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
