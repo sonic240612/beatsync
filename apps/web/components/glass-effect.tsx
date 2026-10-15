@@ -74,7 +74,10 @@ export function GlassEffectProvider() {
     svg.append(defs);
     document.body.append(svg);
 
-    const active = () => document.body.dataset.theme === 'liquid-glass' || !document.body.dataset.theme;
+    const active = () =>
+      document.body.dataset.theme === 'liquid-glass' ||
+      document.body.dataset.theme === 'simple' ||
+      !document.body.dataset.theme;
     const motionEnabled = () =>
       active() &&
       !document.hidden &&
