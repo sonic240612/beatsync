@@ -614,7 +614,7 @@ export default function SpeedMode() {
         </div>
       )}
 
-      {/* Sound Visualizer & Progress Bar (Practice Mode Style) */}
+      {/* Sound Visualizer & Progress Bar */}
       <div className="w-full max-w-xl mx-auto space-y-2.5 py-2 sm:py-3">
         {/* Dynamic Sound Wave Visualizer */}
         <div className="flex h-12 sm:h-16 items-end justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1" aria-hidden="true">

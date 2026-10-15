@@ -865,7 +865,7 @@ export default function TimelineMode() {
             </div>
           )}
 
-          {/* Audio Wave Visualizer & Practice-mode style Progress Bar */}
+          {/* Audio Wave Visualizer & Progress Bar */}
           <div className="w-full max-w-xl mx-auto space-y-2.5 py-2 sm:py-3">
             {/* Sound Wave Visualizer */}
             <div className="flex items-center justify-center gap-2 py-1" aria-hidden="true">

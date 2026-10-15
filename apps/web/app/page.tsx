@@ -141,14 +141,6 @@ export default function Home() {
         </a>
 
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-
-          <a
-            href="/practice"
-            className="rounded-full border border-slate-700/60 bg-slate-800/40 px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs font-medium text-slate-300 hover:text-white transition-colors"
-          >
-            연습 모드
-          </a>
-
           {/* Volume Control Button */}
           <VolumeControl />
 

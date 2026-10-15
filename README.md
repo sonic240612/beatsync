@@ -41,8 +41,6 @@
   - 각 플레이어가 시작 카드 2장(발매연도 공개)을 가지고 시작하며, 매 턴 재생되는 곡의 발매연도를 추리해 내 타임라인의 올바른 연대순 슬롯(`+ 여기에 배치`)에 카드를 끼워 넣는 전략 게임입니다.
   - **승리 목표 카드 수 슬라이더**: 호스트가 로비에서 승리 목표 카드 수를 **최소 8장 ~ 최대 20장(기본 10장)** 사이로 직접 조절할 수 있습니다.
   - **모바일 터치 & 휠 스크롤 편의성**: 터치스크린 사용자를 위한 `[ + 배치 ]` 버튼 터치 가이드와, 데스크톱에서 `Shift` 키 없이 **일반 마우스 휠 스크롤만으로 가로 스크롤**되는 타임라인 카드 컨테이너를 제공합니다.
-- **🎧 1인 연습 모드 (`/practice`)**
-  - 대기실과 별도로 혼자서 장르별 음원을 재생해 보고 정답 판정을 테스트할 수 있는 연습실 페이지입니다.
 - **👑 새로고침 시 호스트 권한 자동 복원 (세션 안정성)**
   - 게임 도중이나 대기실에서 브라우저를 새로고침(F5)해도 방장 권한을 다른 플레이어에게 빼앗기지 않고 즉시 호스트 상태를 복원합니다.
 - **🔊 실시간 무중단 볼륨 조절 & 퀵 프리셋**
@@ -81,7 +79,7 @@
 beatsync/
 ├── apps/
 │   └── web/                  # Next.js 15 프론트엔드 (React 19, Tailwind CSS, Zustand, Socket.IO Client)
-│       ├── app/              # 메인 로비(page.tsx), 스피드 모드(speed-mode.tsx), 타임라인 모드(timeline-mode.tsx), 연습실(practice/)
+│       ├── app/              # 메인 로비(page.tsx), 스피드 모드(speed-mode.tsx), 타임라인 모드(timeline-mode.tsx)
 │       ├── components/       # LiquidSelect, LiquidSegmentGroup, VolumeControl, ToastContainer 등 UI 컴포넌트
 │       ├── lib/              # 클라이언트 게임 상태 스토어(game.ts) 및 정답 판정/변환 모듈(rules.ts, japanese-translit.ts)
 │       └── public/           # 공식 앱 아이콘(icon.svg) 및 정적 애셋

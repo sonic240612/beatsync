@@ -9,8 +9,7 @@
     "test:smoke": "node scripts/smoke.mjs",
     "audio": "node scripts/make-demo-audio.mjs",
     "dev:web": "npm --prefix apps/web run dev -- --hostname 127.0.0.1",
-    "build:web": "npm --prefix apps/web run build",
-    "test:practice": "node scripts/practice-browser.mjs"
+    "build:web": "npm --prefix apps/web run build"
   },
   "dependencies": {
     "express": "^5.1.0",
