@@ -61,6 +61,10 @@ const NEGATIVE_PATTERNS = [
   /\bshorts\b/i,
   /acapella/i,
   /아카펠라/i,
+  /english\s*ver(?:sion)?|영어\s*버전|\beng\s*ver\b/i,
+  /japanese\s*ver(?:sion)?|일본어\s*버전|\bjp\s*ver\b/i,
+  /korean\s*ver(?:sion)?|한국어\s*버전|\bkor\s*ver\b/i,
+  /chinese\s*ver(?:sion)?|중국어\s*버전/i,
 ];
 
 const KNOWN_LABELS = [
@@ -132,6 +136,16 @@ function scoreCandidate(
     }
   }
 
+  // Check for third-party covers indicated by "by <Singer>"
+  const byMatch = rawTitle.match(/\bby\s+([A-Za-z0-9가-힣\s]{2,})/i);
+  if (byMatch && byMatch[1]) {
+    const bySinger = normalize(byMatch[1]);
+    const matchesTargetArtist = normArtistList.some(na => na && (bySinger.includes(na) || na.includes(bySinger)));
+    if (!matchesTargetArtist && !normTitleList.some(nt => nt && nt.includes(bySinger))) {
+      return { score: -999, reason: `Third-party cover by: ${byMatch[1]}` };
+    }
+  }
+
   let score = 0;
 
   // 3. Title matching (up to 40 pts)
@@ -172,14 +186,14 @@ function scoreCandidate(
     }
   }
 
-  // 5. Official indicators bonus (up to 30 pts)
+  // 5. Official indicators bonus
   // Topic channel (auto-generated official audio feed from YouTube Music)
   if (candidate.channel.endsWith('- Topic') || candidate.channel.includes('Release - Topic')) {
-    score += 30;
+    score += 35;
   }
   // Verified Artist badge
   if (candidate.isVerifiedArtist) {
-    score += 25;
+    score += 35;
   }
   // Verified Channel badge
   if (candidate.isVerified) {
@@ -192,17 +206,17 @@ function scoreCandidate(
   }
   // Channel name contains artist name
   if (artistMatchedInChannel) {
-    score += 15;
+    score += 25;
   }
   // Official audio / MV keyword in title
   if (/official\s*audio|오피셜\s*오디오/i.test(candidate.title)) {
     score += 20;
-  } else if (/official\s*(?:mv|music\s*video)|\[mv\]|\(mv\)/i.test(candidate.title)) {
-    score += 15;
+  } else if (/official\s*(?:mv|music\s*video)|\[mv\]|\(mv\)|：music\s*video|music\s*video/i.test(candidate.title)) {
+    score += 20;
   }
 
-  // 6. Typical song duration bonus (2m ~ 5m)
-  if (durSec >= 120 && durSec <= 300) {
+  // 6. Typical song duration bonus (2m ~ 6m)
+  if (durSec >= 120 && durSec <= 360) {
     score += 5;
   }
 

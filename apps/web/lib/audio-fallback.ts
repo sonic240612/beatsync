@@ -1,7 +1,7 @@
 /**
  * Direct client-side audio preview fallback resolver
  * Runs directly in player's browser using residential/mobile client IP (bypassing server rate limits)
- * Utilizes Apple Music's public CORS-enabled (Access-Control-Allow-Origin: *) search endpoint,
+ * Utilizes Apple Music's public CORS-enabled search endpoint (excluding DRM audio),
  * Deezer search, and verified YouTube audio fallback
  */
 
@@ -40,18 +40,47 @@ const BAD_FALLBACK_PATTERNS = [
   /반주/i,
   /\btribute\b/i,
   /acoustic\s*cover/i,
+  /english\s*ver(?:sion)?|영어\s*버전|\beng\s*ver\b/i,
+  /japanese\s*ver(?:sion)?|일본어\s*버전|\bjp\s*ver\b/i,
+  /korean\s*ver(?:sion)?|한국어\s*버전|\bkor\s*ver\b/i,
+  /chinese\s*ver(?:sion)?|중국어\s*버전/i,
 ];
 
-function isValidTrackCandidate(candTitle: string, candArtist: string, targetTitle: string, targetArtist: string): boolean {
+function isPlayableAudioUrl(url: string): boolean {
+  if (!url) return false;
+  if (url.endsWith('.m4p')) return false;
+  return true;
+}
+
+function isValidTrackCandidate(
+  candTitle: string,
+  candArtist: string,
+  targetTitle: string,
+  targetArtist: string,
+  aliases: { title?: string[]; artist?: string[] } = {}
+): boolean {
   for (const pat of BAD_FALLBACK_PATTERNS) {
     if (pat.test(candTitle) && !pat.test(targetTitle)) return false;
     if (pat.test(candArtist) && !pat.test(targetArtist)) return false;
   }
 
-  const normTargetTitle = normalize(targetTitle);
-  const normCandTitle = normalize(candTitle);
+  const normTitleList = [normalize(targetTitle), ...(aliases.title || []).map(normalize)].filter(Boolean);
+  const normArtistList = [normalize(targetArtist), ...(aliases.artist || []).map(normalize)].filter(Boolean);
 
-  const titleMatch = normCandTitle.includes(normTargetTitle) || normTargetTitle.includes(normCandTitle);
+  const normCandTitle = normalize(candTitle);
+  const normCandArtist = normalize(candArtist);
+
+  // Check for third-party covers indicated by "by <Singer>"
+  const byMatch = candTitle.match(/\bby\s+([A-Za-z0-9가-힣\s]{2,})/i);
+  if (byMatch && byMatch[1]) {
+    const bySinger = normalize(byMatch[1]);
+    const matchesTargetArtist = normArtistList.some(na => na && (bySinger.includes(na) || na.includes(bySinger)));
+    if (!matchesTargetArtist && !normTitleList.some(nt => nt && nt.includes(bySinger))) {
+      return false;
+    }
+  }
+
+  const titleMatch = normTitleList.some(nt => nt && (normCandTitle.includes(nt) || nt.includes(normCandTitle)));
   if (!titleMatch) {
     const words = targetTitle.toLowerCase().split(/\s+/).filter(w => w.length > 1);
     const matched = words.filter(w => candTitle.toLowerCase().includes(w));
@@ -59,14 +88,17 @@ function isValidTrackCandidate(candTitle: string, candArtist: string, targetTitl
   }
 
   if (targetArtist) {
-    const normTargetArtist = normalize(targetArtist);
-    const normCandArtist = normalize(candArtist);
-    const artistMatch = normCandArtist.includes(normTargetArtist) ||
-                        normTargetArtist.includes(normCandArtist) ||
-                        normCandTitle.includes(normTargetArtist);
+    const artistMatch = normArtistList.some(na => na && (
+      normCandArtist.includes(na) ||
+      na.includes(normCandArtist) ||
+      normCandTitle.includes(na)
+    ));
     if (!artistMatch) {
-      const tokens = targetArtist.toLowerCase().split(/[\s,&/]+/).filter(w => w.length > 1);
-      const matched = tokens.some(t => candArtist.toLowerCase().includes(t) || candTitle.toLowerCase().includes(t));
+      const allTokens = [
+        ...targetArtist.toLowerCase().split(/[\s,&/]+/),
+        ...(aliases.artist || []).flatMap(a => a.toLowerCase().split(/[\s,&/]+/))
+      ].filter(w => w.length > 1);
+      const matched = allTokens.some(t => candArtist.toLowerCase().includes(t) || candTitle.toLowerCase().includes(t));
       if (!matched) return false;
     }
   }
@@ -83,26 +115,41 @@ export interface FallbackAudioResult {
 export async function resolveClientAudioFallback(rawTitle?: string, rawArtist?: string, trackId?: string): Promise<FallbackAudioResult | null> {
   let title = rawTitle || '';
   let artist = rawArtist || '';
+  let aliases: { title?: string[]; artist?: string[] } = {};
 
-  if ((!title || !artist) && trackId) {
+  if (trackId) {
     const found = catalog.find(t => t.id === trackId);
     if (found) {
       if (!title) title = found.title;
       if (!artist) artist = found.artist;
+      if (found.aliases) aliases = found.aliases;
     }
   }
 
   if (!title && !artist && !trackId) return null;
 
   const { cleanTitle, firstArtist } = cleanForSearch(title, artist);
+
+  // If aliases not loaded by trackId, look up catalog by title & artist
+  if (!aliases.title && !aliases.artist) {
+    const normT = normalize(cleanTitle);
+    const normA = normalize(firstArtist);
+    const found = catalog.find(t => normalize(t.title) === normT && normalize(t.artist) === normA);
+    if (found?.aliases) {
+      aliases = found.aliases;
+    }
+  }
+
   const queries = [
     firstArtist ? `${firstArtist} ${cleanTitle}` : cleanTitle,
     firstArtist ? `${cleanTitle} ${firstArtist}` : '',
     artist && title ? `${artist} ${title}` : '',
   ].filter(Boolean);
 
-  // 1. Try Apple Music directly from browser (CORS enabled)
-  const countries = ['US', 'JP'];
+  // 1. Try Apple Music directly from browser (CORS enabled, DRM-free audio only)
+  const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(`${title} ${artist}`);
+  const countries = hasJapanese ? ['JP', 'US'] : ['US', 'JP'];
+
   for (const country of countries) {
     for (const q of queries) {
       try {
@@ -111,8 +158,8 @@ export async function resolveClientAudioFallback(rawTitle?: string, rawArtist?: 
         if (res.ok) {
           const data = await res.json();
           const cand = (data.results || []).find((r: any) => {
-            if (!r.previewUrl) return false;
-            return isValidTrackCandidate(r.trackName || '', r.artistName || '', cleanTitle, firstArtist);
+            if (!r.previewUrl || !isPlayableAudioUrl(r.previewUrl)) return false;
+            return isValidTrackCandidate(r.trackName || '', r.artistName || '', cleanTitle, firstArtist, aliases);
           });
           if (cand?.previewUrl) {
             return { url: cand.previewUrl, source: 'itunes' };
@@ -122,7 +169,7 @@ export async function resolveClientAudioFallback(rawTitle?: string, rawArtist?: 
     }
   }
 
-  // 2. Try Deezer directly from browser
+  // 2. Try Deezer directly from browser (rejecting karaoke/MR)
   for (const q of queries) {
     try {
       const url = `https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=8`;
@@ -131,7 +178,7 @@ export async function resolveClientAudioFallback(rawTitle?: string, rawArtist?: 
         const data = await res.json();
         const cand = (data.data || []).find((r: any) => {
           if (!r.preview) return false;
-          return isValidTrackCandidate(r.title || '', r.artist?.name || '', cleanTitle, firstArtist);
+          return isValidTrackCandidate(r.title || '', r.artist?.name || '', cleanTitle, firstArtist, aliases);
         });
         if (cand?.preview) {
           return { url: cand.preview, source: 'deezer' };
@@ -143,8 +190,8 @@ export async function resolveClientAudioFallback(rawTitle?: string, rawArtist?: 
   // 3. Ultimate Fallback: Verified YouTube Audio Video ID
   try {
     const params = new URLSearchParams();
-    if (rawTitle) params.set('title', rawTitle);
-    if (rawArtist) params.set('artist', rawArtist);
+    if (rawTitle || title) params.set('title', rawTitle || title);
+    if (rawArtist || artist) params.set('artist', rawArtist || artist);
     if (trackId) params.set('trackId', trackId);
 
     const ytRes = await fetch(`/api/audio/youtube?${params.toString()}`);

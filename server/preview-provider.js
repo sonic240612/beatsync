@@ -172,8 +172,11 @@ export function createTrackProvider(baseUrl, options = {}) {
       if (startSeconds) params.set('start', String(startSeconds));
       const qs = params.toString() ? `?${params.toString()}` : '';
 
+      const isPlayableUrl = (u) => u && !u.includes('.p.m4a') && !u.includes('.m4p');
+      const playablePreview = isPlayableUrl(track.previewUrl) ? track.previewUrl : null;
+
       return {
-        url: track.previewUrl || `${safeBase}/api/audio/${encodeURIComponent(track.id)}${qs}`,
+        url: playablePreview || `${safeBase}/api/audio/${encodeURIComponent(track.id)}${qs}`,
         startSeconds,
         trackId: track.id,
         title: track.title,

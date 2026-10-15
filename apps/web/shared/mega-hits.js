@@ -1791,7 +1791,7 @@ export const MEGA_HITS = [
     artist: 'Eve',
     year: 2020,
     category: 'jpop_hits',
-    aliases: { title: ['회회기담', '카이카이키탄', '주술회전'], artist: ['이브'] },
+    aliases: { title: ['회회기담', '카이카이키탄', 'kaikaikitan', 'kaikai kitan', '주술회전'], artist: ['이브'] },
   },
   {
     id: 'jpop-spitz-robinson',
