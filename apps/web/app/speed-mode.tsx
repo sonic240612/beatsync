@@ -39,7 +39,7 @@ export default function SpeedMode() {
   const seconds = useCountdown(endsAt);
 
   const activeReveal = reveal || (state?.phase === 'reveal' ? (state?.reveal || null) : null);
-  const snippetSec = state?.settings.snippetSeconds || 15;
+  const snippetSec = state?.settings.snippetSeconds || 30;
   const [audioEnded, setAudioEnded] = useState(false);
 
   // 1-minute countdown during reveal stage

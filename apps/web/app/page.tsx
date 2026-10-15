@@ -43,7 +43,6 @@ export default function Home() {
 
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const [selectedSource, setSelectedSource] = useState<MusicSource>('kpop_hits');
   const [playlistInput, setPlaylistInput] = useState('');
   const [timelineTargetCards, setTimelineTargetCards] = useState<number>(10);
   const [busy, setBusy] = useState(false);
@@ -226,10 +225,7 @@ export default function Home() {
                   addToast('먼저 닉네임을 입력해주세요.', 'warning');
                   return;
                 }
-                act(() => createRoom(name.trim(), {
-                  musicSource: selectedSource,
-                  mode: selectedSource === 'timeline_all' ? 'timeline' : 'speed',
-                }));
+                act(() => createRoom(name.trim()));
               }}
               data-liquid-surface
               className="liquid-glass-card p-6 sm:p-8 flex flex-col justify-between"
@@ -238,17 +234,17 @@ export default function Home() {
                 <h3 className="text-xl font-bold flex items-center gap-2">
                   <span className="text-emerald-400">✦</span> 방 만들기
                 </h3>
-                <p className="mt-1 text-xs text-slate-400">호스트가 되어 게임 모드와 음악을 선택합니다.</p>
+                <p className="mt-1 text-xs text-slate-400">호스트가 되어 게임 방을 생성합니다.</p>
 
-                <div className="mt-5">
-                  <label className="block text-xs font-semibold tracking-wide text-slate-300 uppercase mb-1.5">
-                    시작 음악 테마
-                  </label>
-                  <LiquidSelect
-                    value={selectedSource}
-                    onChange={setSelectedSource}
-                    options={MUSIC_SOURCE_OPTIONS}
-                  />
+                <div className="mt-5 rounded-2xl bg-white/[0.03] border border-white/10 p-4 space-y-2.5">
+                  <div className="flex items-start gap-2.5 text-xs text-slate-300">
+                    <span className="text-emerald-400 mt-0.5 font-bold">✦</span>
+                    <span>방 입장 후 대기실에서 <strong>스피드 퀴즈</strong> 또는 <strong>타임라인 모드</strong>를 자유롭게 선택할 수 있습니다.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5 text-xs text-slate-400">
+                    <span className="text-emerald-400 mt-0.5 font-bold">✦</span>
+                    <span>K-Pop, Pop, J-Pop, 올타임 명곡 등 모든 음악 테마와 라운드 설정을 호스트가 언제든 변경할 수 있습니다.</span>
+                  </div>
                 </div>
               </div>
 
@@ -313,7 +309,7 @@ export default function Home() {
       {inRoom && (
         <div className="space-y-6">
           {/* Room Header Card (Apple visionOS Floating Bar) */}
-          <section className="liquid-glass-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 sm:p-6">
+          <section data-liquid-surface className="liquid-glass-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 sm:p-6">
             <div className="flex items-center justify-between sm:justify-start gap-3">
               {/* Room Code Display Capsule */}
               <div className="flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-white/[0.04] border border-white/10 shadow-inner">
@@ -422,7 +418,7 @@ export default function Home() {
                 {/* Game Mode */}
                 <div className="apple-glass-row">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-lg">⚡</span>
+                    <span className="text-lg">{state.settings.mode === 'speed' ? '⚡' : '🃏'}</span>
                     <div>
                       <span className="text-[13.5px] font-bold text-slate-200">게임 모드</span>
                       <p className="text-xs text-slate-400">
@@ -461,13 +457,7 @@ export default function Home() {
                   <LiquidSelect
                     disabled={!isHost}
                     value={state.settings.musicSource || 'kpop_hits'}
-                    onChange={val => {
-                      if (val === 'timeline_all' && state.settings.mode !== 'timeline') {
-                        configure({ musicSource: val, mode: 'timeline' });
-                      } else {
-                        configure({ musicSource: val });
-                      }
-                    }}
+                    onChange={val => configure({ musicSource: val })}
                     options={MUSIC_SOURCE_OPTIONS}
                   />
                 </div>
@@ -687,7 +677,7 @@ export default function Home() {
                         </div>
                       </div>
                       <LiquidSegmentGroup
-                        value={state.settings.snippetSeconds || 15}
+                        value={state.settings.snippetSeconds || 30}
                         onChange={s => configure({ snippetSeconds: s })}
                         disabled={!isHost}
                         options={[

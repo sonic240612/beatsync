@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export interface LiquidSegmentOption<T extends string | number> {
   value: T;
@@ -29,6 +29,18 @@ export function LiquidSegmentGroup<T extends string | number>({
   accent = 'emerald',
   ariaLabel,
 }: LiquidSegmentGroupProps<T>) {
+  const [currentVal, setCurrentVal] = useState<T>(value);
+
+  useEffect(() => {
+    setCurrentVal(value);
+  }, [value]);
+
+  const handleSelect = (nextVal: T) => {
+    if (disabled || nextVal === currentVal) return;
+    setCurrentVal(nextVal);
+    onChange(nextVal);
+  };
+
   return (
     <div
       data-liquid-surface
@@ -40,18 +52,14 @@ export function LiquidSegmentGroup<T extends string | number>({
     >
       <span className="selection-lens" aria-hidden="true" />
       {options.map(option => {
-        const isActive = option.value === value;
+        const isActive = option.value === currentVal;
         return (
           <button
             key={String(option.value)}
             type="button"
             disabled={disabled}
             title={option.title}
-            onClick={() => {
-              if (!disabled && option.value !== value) {
-                onChange(option.value);
-              }
-            }}
+            onClick={() => handleSelect(option.value)}
             className={`tab-btn ${isActive ? 'active' : ''}`}
             aria-pressed={isActive}
             data-value={String(option.value)}

@@ -45,7 +45,7 @@ export default function TimelineMode() {
   const isPlayingPhase = state?.phase === 'playing';
   const activeReveal = reveal || (state?.phase === 'reveal' ? (state?.reveal || null) : null);
   const targetCards = state?.settings?.targetCards ?? 10;
-  const snippetSec = state?.settings?.snippetSeconds || 15;
+  const snippetSec = state?.settings?.snippetSeconds || 30;
   const endsAt = state?.endsAt;
   const seconds = useCountdown(endsAt);
   const [audioEnded, setAudioEnded] = useState(false);

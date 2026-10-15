@@ -393,7 +393,7 @@ export const useGame = create<Store>((set, get) => ({
     const result = await get().request('room:create', {
       name,
       musicSource: options?.musicSource || 'kpop_hits',
-      mode: options?.mode || (options?.musicSource === 'timeline_all' ? 'timeline' : 'speed'),
+      mode: options?.mode || 'speed',
     });
     if (result?.ok && result.state) {
       const state = result.state as RoomState;

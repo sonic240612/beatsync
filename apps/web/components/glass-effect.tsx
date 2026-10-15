@@ -388,18 +388,21 @@ export function GlassEffectProvider() {
       if (!record) return;
 
       const isCard = surface.classList.contains('liquid-glass-card') || surface.offsetWidth > 280;
-      if (isCard) return; // Cards do not tilt or move
 
       const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
       const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
       record.spring.lightX.target = x;
       record.spring.lightY.target = y;
 
-      const xFactor = record.pressed ? 3.5 : 2.0;
-      const yFactor = record.pressed ? 2.5 : 1.5;
-
-      record.spring.x.target = (x - 0.5) * xFactor;
-      record.spring.y.target = (y - 0.5) * yFactor;
+      if (isCard) {
+        record.spring.x.target = 0;
+        record.spring.y.target = 0;
+      } else {
+        const xFactor = record.pressed ? 3.5 : 2.0;
+        const yFactor = record.pressed ? 2.5 : 1.5;
+        record.spring.x.target = (x - 0.5) * xFactor;
+        record.spring.y.target = (y - 0.5) * yFactor;
+      }
       record.hovered = true;
       updateTargets(record, surface);
     }
@@ -591,7 +594,7 @@ export function GlassEffectProvider() {
     }
 
     function lensBorderDisplacementMap(width: number, height: number, radius: number) {
-      const key = `lens-border:${width}:${height}:${radius.toFixed(1)}`;
+      const key = `lens-border-v2:${width}:${height}:${radius.toFixed(1)}`;
       if (mapCache.has(key)) return mapCache.get(key)!;
 
       const resolution = Math.min(1.5, 600 / width, 200 / height);
@@ -604,9 +607,9 @@ export function GlassEffectProvider() {
       const data = context.createImageData(canvas.width, canvas.height);
       const halfWidth = width / 2;
       const halfHeight = height / 2;
-      // Border-only bevel zone: subtly expanded from 4.5px to 6.0px
-      const bevelWidth = 6.0;
-      const strength = 11.0; // Slightly more pronounced optical refraction at the curvature rim
+      // Border-only bevel zone: expanded from 6.0px to 9.5px for deeper perimeter refraction
+      const bevelWidth = Math.min(halfHeight * 0.55, 9.5);
+      const strength = 13.0; // Refined optical refraction across the wider curvature rim
 
       for (let y = 0; y < canvas.height; y += 1) {
         for (let x = 0; x < canvas.width; x += 1) {
@@ -655,8 +658,8 @@ export function GlassEffectProvider() {
         record.lens.style.removeProperty('--lens-filter');
         return;
       }
-      const width = Math.max(1, Math.round(record.value.width || record.target.width));
-      const height = Math.max(1, Math.round(record.value.height || record.target.height));
+      const width = Math.max(1, Math.round(record.target.width || record.value.width));
+      const height = Math.max(1, Math.round(record.target.height || record.value.height));
       if (width < 8 || height < 8) return;
       const radius = height / 2;
       const sizeKey = `${width}:${height}:${radius.toFixed(1)}`;
@@ -784,7 +787,7 @@ export function GlassEffectProvider() {
 
         for (let step = 0; step < steps; step += 1) {
           for (const key of lensDimensions) {
-            integrateLens(record, key, dt, dragging ? 660 : 400, dragging ? 44 : 27);
+            integrateLens(record, key, dt, dragging ? 580 : 380, dragging ? 46 : 39);
           }
           const uniformScale = 1 + bloomScale;
           record.target.scaleX = uniformScale;
@@ -877,10 +880,14 @@ export function GlassEffectProvider() {
             record.dispatchingSelection = false;
           }
           button.focus({ preventScroll: true });
+          aimLens(record, buttonGeometry(button, record.group));
+          return;
         }
       }
-      const selected = selectedButton(record);
-      if (selected) aimLens(record, buttonGeometry(selected, record.group));
+      if (cancelled) {
+        const selected = selectedButton(record);
+        if (selected) aimLens(record, buttonGeometry(selected, record.group));
+      }
     }
 
     function registerLensGroup(group: HTMLElement) {
@@ -1060,20 +1067,19 @@ export function GlassEffectProvider() {
       lensGroups.forEach(record => {
         if (!record.drag) {
           const btn = selectedButton(record);
-          if (btn) aimLens(record, buttonGeometry(btn, record.group), immediate);
+          if (btn) {
+            const shouldSnap = immediate && (!record.initialized || !motionEnabled());
+            aimLens(record, buttonGeometry(btn, record.group), shouldSnap);
+          }
         }
       });
     }
 
     function scheduleLensRealignment() {
       requestAnimationFrame(() => {
-        refreshAllLenses(true);
-        requestAnimationFrame(() => {
-          refreshAllLenses(true);
-        });
+        refreshAllLenses(false);
       });
-      setTimeout(() => refreshAllLenses(true), 60);
-      setTimeout(() => refreshAllLenses(false), 220);
+      setTimeout(() => refreshAllLenses(false), 80);
     }
 
     // Dynamic Discovery: Query and observe all current and future [data-liquid-surface] and [data-liquid-segment-group] elements
@@ -1101,10 +1107,43 @@ export function GlassEffectProvider() {
 
     syncSurfaces();
 
-    const domMutationObserver = new MutationObserver(() => {
-      syncSurfaces();
-      scheduleRefresh();
-      scheduleLensRealignment();
+    const domMutationObserver = new MutationObserver(mutations => {
+      let structuralChange = false;
+      for (const m of mutations) {
+        if (m.type === 'childList') {
+          for (const node of m.addedNodes) {
+            if (
+              node instanceof HTMLElement &&
+              (node.hasAttribute('data-liquid-surface') ||
+                node.hasAttribute('data-liquid-segment-group') ||
+                node.querySelector?.('[data-liquid-surface], [data-liquid-segment-group]'))
+            ) {
+              structuralChange = true;
+              break;
+            }
+          }
+          if (structuralChange) break;
+          for (const node of m.removedNodes) {
+            if (
+              node instanceof HTMLElement &&
+              (node.hasAttribute('data-liquid-surface') ||
+                node.hasAttribute('data-liquid-segment-group') ||
+                node.querySelector?.('[data-liquid-surface], [data-liquid-segment-group]'))
+            ) {
+              structuralChange = true;
+              break;
+            }
+          }
+        } else if (m.type === 'attributes') {
+          structuralChange = true;
+        }
+        if (structuralChange) break;
+      }
+
+      if (structuralChange) {
+        syncSurfaces();
+        scheduleRefresh();
+      }
     });
     domMutationObserver.observe(document.body, {
       childList: true,

@@ -136,7 +136,7 @@ export class Game {
     if (this.config.mode === 'speed' && this.roundIndex >= this.config.rounds) return this.finish();
     const track = this.drawNextTrack();
     if (!track) return this.finish();
-    const snippetSec = this.config.snippetSeconds || 15;
+    const snippetSec = this.config.snippetSeconds || 30;
     const startSeconds = Math.floor(Math.random() * Math.max(1, 30 - snippetSec));
     const preview = this.provider.getPreview(track, startSeconds);
     this.phase = 'playing'; this.roundId += 1; this.winner = null;

@@ -61,7 +61,7 @@ export function HiddenYouTubePlayer({
   videoId,
   isPlaying,
   startSeconds = 0,
-  snippetSeconds = 15,
+  snippetSeconds = 30,
   volume = 0.5,
   replayKey = 0,
   onPlay,

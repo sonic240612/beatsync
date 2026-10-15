@@ -127,7 +127,7 @@ io.on('connection', (socket) => {
       : 'kpop_hits';
     const initialMode = (data?.mode && ['speed', 'timeline'].includes(data.mode))
       ? data.mode
-      : (initialSource === 'timeline_all' ? 'timeline' : 'speed');
+      : 'speed';
     const room = {
       code,
       phase: 'lobby',
@@ -136,9 +136,9 @@ io.on('connection', (socket) => {
       settings: {
         mode: initialMode,
         target: 'both',
-        rounds: 10,
+        rounds: 20,
         targetCards: 10,
-        snippetSeconds: 15,
+        snippetSeconds: 30,
         musicSource: initialSource,
         playlistUrl: ''
       },
@@ -230,7 +230,7 @@ io.on('connection', (socket) => {
       }
     }
 
-    const resolvedMode = mode || (musicSource === 'timeline_all' && room.settings.mode === 'speed' ? 'timeline' : undefined);
+    const resolvedMode = mode;
 
     room.settings = {
       ...room.settings,
