@@ -143,6 +143,9 @@ export default function Home() {
         </a>
 
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Volume Control Button */}
+          <VolumeControl />
+
           {/* Simple Theme Toggle Button */}
           <button
             onClick={toggleThemeStyle}
@@ -161,9 +164,6 @@ export default function Home() {
               </svg>
             )}
           </button>
-
-          {/* Volume Control Button */}
-          <VolumeControl />
 
           {/* Theme Toggle Button (Light / Dark) */}
           <button
